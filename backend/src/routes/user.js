@@ -1,7 +1,10 @@
 const validator = require('validator')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 const router = require('express').Router()
+
 const pool = require('../connectdb')
+const helpers = require('../helpers/helpers')
 
 router.get('/', (req, res) => {
     res.send('User Home Page')
@@ -12,6 +15,7 @@ router.post('/registertest', async (req, res) => {
     res.send(req.body)
 })
 
+/* USER REGISTRATION */
 router.post('/register', async (req, res) => {
     const { email, firstname, lastname, password, type, carspace } = req.body
 
@@ -69,9 +73,55 @@ router.post('/register', async (req, res) => {
                 return console.log(err)
             }
 
-            res.status(201).send({ success: 'New user created.' })
+            return res.status(201).send({ success: 'New user created.' })
         }
     )
 })
+
+/* USER LOGIN */
+router.post('/login', (req, res) => {
+    const { email, password } = req.body
+
+    // 1. Find if user with email exists
+
+    // In function
+    // 1a. Check that users email is verified
+    // 2. Verify the password; compare with bcrypt
+
+    // 3. Return a jwt for session authentication if successful
+
+    pool.query(`SELECT email, password, is_verified FROM users WHERE email=$1`, [email], (err, results) => {
+        if (err) {
+            return console.log(err)
+        }
+
+        if (results.rows.length === 0) {
+            return res.status(404).send({ error: 'User not found.' })
+        }
+
+        const hashedPassword = results.rows[0].password
+        const isVerified = results.rows[0].hashedPassword
+        const userId = results.rows[0].id
+
+        const { authenticated, status, message } = helpers.verifyUserLogin(password, hashedPassword, isVerified)
+
+        if (!authenticated) {
+            return res.status(status).send({ error: message })
+        } else {
+            const token = jwt.sign({ id: userId.toString() }, 'letscarpool', { expiresIn: '1 day' })
+            pool.query(`INSERT INTO user_session_tokens(user_id, session_token) VALUES ($1, $2)`,
+                [userId, token], (err, results) => {
+                    if (err) {
+                        return console.log(err)
+                    }
+
+                    return res.status(status).send({ success: message })       
+                }
+            )
+        }
+    })
+
+})
+
 
 module.exports = router

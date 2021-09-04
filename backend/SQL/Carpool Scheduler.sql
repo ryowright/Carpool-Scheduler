@@ -6,14 +6,32 @@ CREATE TABLE "users" (
   "password" varchar NOT NULL,
   "type" varchar NOT NULL,
   "carspace" int,
-  "schedule_id" int
+  "school" varchar,
+  "schedule_id" int,
+  "verification_token" varchar,
+  "is_verified" boolean DEFAULT 'false',
+);
+
+CREATE TABLE "user_session_tokens" (
+  "id" SERIAL PRIMARY KEY,
+  "user_id" int,
+  "session_token" varchar
 );
 
 CREATE TABLE "groups" (
   "id" SERIAL PRIMARY KEY,
   "group_id_suffix" int UNIQUE,
   "groupname" varchar,
-  "user_id" int
+  "description" varchar,
+  "user_id" int,
+  "admin_id" int,
+  "group_token" varchar
+);
+
+CREATE TABLE "group_requests" (
+  "id" SERIAL PRIMARY KEY,
+  "user_id" int,
+  "group_id" int
 );
 
 CREATE TABLE "user_schedules" (
@@ -33,6 +51,14 @@ CREATE TABLE "driver_carpool_schedules" (
 ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
 
 ALTER TABLE "groups" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "groups" ADD FOREIGN KEY ("admin_id") REFERENCES "users" ("id");
+
+ALTER TABLE "user_session_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "group_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "group_requests" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_id") REFERENCES "users" ("id");
 

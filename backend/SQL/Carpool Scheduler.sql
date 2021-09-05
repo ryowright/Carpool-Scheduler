@@ -6,16 +6,16 @@ CREATE TABLE "users" (
   "password" varchar NOT NULL,
   "type" varchar NOT NULL,
   "carspace" int,
-  "school" varchar,
+  "school" varchar NOT NULL,
   "schedule_id" int,
-  "verification_token" varchar,
-  "is_verified" boolean DEFAULT 'false',
+  "email_token" varchar,
+  "is_verified" boolean DEFAULT 'false'
 );
 
 CREATE TABLE "password_change_requests" (
   "id" SERIAL PRIMARY KEY,
   "created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
-  "user_id" varchar NOT NULL,
+  "user_id" int NOT NULL,
   "reset_token" varchar
 );
 

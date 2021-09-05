@@ -3,9 +3,13 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const router = require('express').Router()
+const sgMail = require('@sendgrid/mail')
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const pool = require('../connectdb')
 const helpers = require('../helpers/helpers')
+
+const hostURL = process.env.HOST_URL
 
 router.get('/', (req, res) => {
     res.send('User Home Page')
@@ -69,10 +73,11 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 8)
 
     // Email verification --- Twilio
+    const emailToken = crypto.randomBytes(64).toString('hex')
+    helpers.sendVerifyEmail(email, firstname, emailToken, hostURL)
 
-
-    pool.query(`INSERT INTO users(email, firstname, lastname, password, type, carspace, school)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)`, [email, firstname, lastname, hashedPassword, type, carspace, school], 
+    pool.query(`INSERT INTO users(email, firstname, lastname, password, type, carspace, school, email_token)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, [email, firstname, lastname, hashedPassword, type, carspace, school, emailToken], 
         (err, results) => {
             if (err) {
                 return console.log(err)
@@ -81,6 +86,33 @@ router.post('/register', async (req, res) => {
             return res.status(201).send({ success: 'New user created.' })
         }
     )
+})
+
+/* VERIFY EMAIL */
+router.post('/verify-email', (req, res) => {
+    const { emailToken } = req.body
+
+    if (!emailToken) {
+        return res.status(400).send({ error: 'Invalid email token.' })
+    }
+
+    pool.query(`SELECT id, email FROM users WHERE email_token=$1`, [emailToken], (err, results) => {
+        if (err) {
+            return console.log(err)
+        }
+
+        if (results.rows.length === 0) {
+            return res.status(404).send({ error: 'User not found.' })
+        }
+
+        pool.query(`UPDATE users SET email_token=null, is_verified='true' WHERE email_token=$1`, [emailToken], (err, results) => {
+            if (err) {
+                return console.log(err)
+            }
+
+            return res.status(200).send({ success: 'User successfully verified.' })
+        })
+    })
 })
 
 /* USER LOGIN */
@@ -148,10 +180,9 @@ router.post('/logout', (req, res) => {
 /* FORGOT/RESET PASSWORD EMAIL */
 router.post('/reset-password-email', (req, res) => {
     const { email } = req.body
-    let userId = ""
 
     // 1. Verify that email exists
-    pool.query(`SELECT id, email FROM users WHERE email=$1`, [email], (err, results) => {
+    pool.query(`SELECT id, email, firstname FROM users WHERE email=$1`, [email], (err, results) => {
         if (err) {
             return console.log(err)
         }
@@ -160,24 +191,25 @@ router.post('/reset-password-email', (req, res) => {
             return res.status(404).send({ error: 'Email address does not exist in our database.' })
         }
 
-        userId = results.rows[0].id
+        const userId = results.rows[0].id
+        const firstname = results.rows[0].firstname
         if (!userId) {
             return res.status(404).send({ error: 'Unable to find user Id.' })
         }
+
+        // 2. Generate reset token and insert into database
+        const resetToken = crypto.randomBytes(64).toString('hex')
+
+        pool.query(`INSERT INTO password_change_requests(user_id, reset_token) VALUES ($1, $2)`, [userId, resetToken], (err, results) => {
+            if (err) {
+                return console.log(err)
+            }
+        })
+
+        // 3. Send email with link containing reset token -- twilio
+        helpers.sendPasswordResetEmail(email, firstname, resetToken, hostURL)
+        return res.status(200).send({ success: 'Reset email successfully sent.' })
     })
-
-    // 2. Generate reset token and insert into database
-    const resetToken = crypto.randomBytes(64).toString('hex')
-
-    pool.query(`INSERT INTO password_change_requests(user_id, reset_token) VALUES ($1, $2)`, [userId, resetToken], (err, results) => {
-        if (err) {
-            return console.log(err)
-        }
-    })
-
-    // 3. Send email with link containing reset token -- twilio
-
-
 })
 
 /* FORGOT/RESET PASSWORD */
@@ -185,7 +217,7 @@ router.post('/reset-password', (req, res) => {
     const { resetToken, newPassword } = req.body
 
     // 1. Get entry for reset token in database
-    pool.query(`SELECT * FROM password_change_requests WHERE reset_token=$1`, [resetToken], (err, results) => {
+    pool.query(`SELECT * FROM password_change_requests WHERE reset_token=$1`, [resetToken], async (err, results) => {
         if (err) {
             return console.log(err)
         }
@@ -198,7 +230,22 @@ router.post('/reset-password', (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 8)
         
         // 2. Check that timestamp is no more than 24 hours apart
-        
+        // console.log(results.rows[0])
+        const createdDate = new Date(results.rows[0].created_at)
+        const currentDate = new Date()
+
+        const hoursDiff = Math.abs(currentDate.getTime() - createdDate.getTime()) / 36e5
+        console.log({hoursDiff})
+
+        if (hoursDiff > 24) {
+            pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2`, [resetToken, userId], (err, results) => {
+                if (err) {
+                    return console.log(err)
+                }
+
+                return res.status(400).send({ error: 'Reset token has expired. Resend verification.' })
+            })
+        }
 
         // 3. Delete the reset token entry
         pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2`, [resetToken, userId], (err, results) => {

@@ -12,6 +12,13 @@ CREATE TABLE "users" (
   "is_verified" boolean DEFAULT 'false',
 );
 
+CREATE TABLE "password_change_requests" (
+  "id" SERIAL PRIMARY KEY,
+  "created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+  "user_id" varchar NOT NULL,
+  "reset_token" varchar
+);
+
 CREATE TABLE "user_session_tokens" (
   "id" SERIAL PRIMARY KEY,
   "user_id" int,
@@ -49,6 +56,8 @@ CREATE TABLE "driver_carpool_schedules" (
 );
 
 ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
+
+ALTER TABLE "password_change_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "groups" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 

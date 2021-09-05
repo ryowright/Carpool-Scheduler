@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "env-cmd -f ./backend/src/config/dev.env nodemon backend/src/index.js",
+    "start": "env-cmd -f ./src/config/dev.env nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

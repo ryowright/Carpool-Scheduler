@@ -1,3 +1,11 @@
+DROP TABLE IF EXISTS USERS CASCADE;
+DROP TABLE IF EXISTS PASSWORD_CHANGE_REQUESTS CASCADE;
+DROP TABLE IF EXISTS USER_SESSION_TOKENS CASCADE;
+DROP TABLE IF EXISTS GROUPS CASCADE;
+DROP TABLE IF EXISTS GROUP_REQUESTS CASCADE;
+DROP TABLE IF EXISTS USER_SCHEDULES CASCADE;
+DROP TABLE IF EXISTS DRIVER_CARPOOL_SCHEDULES CASCADE;
+
 CREATE TABLE "users" (
   "id" SERIAL PRIMARY KEY,
   "email" varchar UNIQUE NOT NULL,
@@ -6,8 +14,23 @@ CREATE TABLE "users" (
   "password" varchar NOT NULL,
   "type" varchar NOT NULL,
   "carspace" int,
+  "school" varchar NOT NULL,
   "schedule_id" int,
-  "school" int
+  "email_token" varchar,
+  "is_verified" boolean DEFAULT 'false'
+);
+
+CREATE TABLE "password_change_requests" (
+  "id" SERIAL PRIMARY KEY,
+  "created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+  "user_id" int NOT NULL,
+  "reset_token" varchar
+);
+
+CREATE TABLE "user_session_tokens" (
+  "id" SERIAL PRIMARY KEY,
+  "user_id" int,
+  "session_token" varchar
 );
 
 CREATE TABLE "groups" (
@@ -17,7 +40,13 @@ CREATE TABLE "groups" (
   "description" varchar,
   "user_id" int,
   "admin_id" int,
-  "token" varchar
+  "group_token" varchar
+);
+
+CREATE TABLE "group_requests" (
+  "id" SERIAL PRIMARY KEY,
+  "user_id" int,
+  "group_id" int
 );
 
 CREATE TABLE "group_requests" (
@@ -42,9 +71,13 @@ CREATE TABLE "driver_carpool_schedules" (
 
 ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
 
+ALTER TABLE "password_change_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
 ALTER TABLE "groups" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "groups" ADD FOREIGN KEY ("admin_id") REFERENCES "users" ("id");
+
+ALTER TABLE "user_session_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "group_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 

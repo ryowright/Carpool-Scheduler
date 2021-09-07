@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt')
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
@@ -59,32 +60,32 @@ const sendPasswordResetEmail = (email, firstname, resetToken, hostURL) => {
 }
 
 const verifyUserLogin = async (password, hashedPassword, isVerified) => {
-    let authenticated = false 
+    var object = {
+        authenticated: false,
+        status: 401,
+        message: ""
+    }
 
+    // console.log('verifying login')
+    // console.log({ password, hashedPassword, isVerified })
     if (!isVerified) {
-        return {
-            authenticated,
-            status: 401,
-            message: 'User is not verified.',
-        }
+        object.message = 'User is not verified'
+
+        return object
     }
 
     const match = await bcrypt.compare(password, hashedPassword);
 
     if (!match) {
-        return {
-            authenticated,
-            status: 401,
-            message: 'Incorrect credentials.',
-        }
+        object.message = 'Incorrect credentials.'
+
+        return object
     }
 
-    authenticated = true
-    return {
-        authenticated,
-        status: 200,
-        message: 'Login successful',
-    }
+    object.authenticated = true
+    object.status = 200
+    object.message = 'Login successful.'
+    return object
 }
 
 module.exports = {

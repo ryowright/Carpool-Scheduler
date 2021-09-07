@@ -8,6 +8,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const pool = require('../connectdb')
 const helpers = require('../helpers/helpers')
+const auth = require('../middleware/auth')
 
 const hostURL = process.env.HOST_URL
 
@@ -127,7 +128,7 @@ router.post('/login', (req, res) => {
 
     // 3. Return a jwt for session authentication if successful
 
-    pool.query(`SELECT email, password, is_verified FROM users WHERE email=$1`, [email], (err, results) => {
+    pool.query(`SELECT id, password, is_verified FROM users WHERE email=$1`, [email], async (err, results) => {
         if (err) {
             return console.log(err)
         }
@@ -137,13 +138,15 @@ router.post('/login', (req, res) => {
         }
 
         const hashedPassword = results.rows[0].password
-        const isVerified = results.rows[0].hashedPassword
+        const isVerified = results.rows[0].is_verified
         const userId = results.rows[0].id
 
-        const { authenticated, status, message } = helpers.verifyUserLogin(password, hashedPassword, isVerified)
+        const object = await helpers.verifyUserLogin(password, hashedPassword, isVerified)
 
-        if (!authenticated) {
-            return res.status(status).send({ error: message })
+        console.log(object.status)
+
+        if (!object.authenticated) {
+            return res.status(object.status).send({ error: object.message })
         } else {
             const token = jwt.sign({ id: userId.toString() }, 'letscarpool', { expiresIn: '1 day' })
             pool.query(`INSERT INTO user_session_tokens(user_id, session_token) VALUES ($1, $2)`,
@@ -152,7 +155,7 @@ router.post('/login', (req, res) => {
                         return console.log(err)
                     }
 
-                    return res.status(status).send({ success: message })       
+                    return res.status(object.status).send({ success: object.message })   
                 }
             )
         }
@@ -160,7 +163,7 @@ router.post('/login', (req, res) => {
 })
 
 /* USER LOGOUT */
-router.post('/logout', (req, res) => {
+router.post('/logout', auth, (req, res) => {
     const { token } = req.body
     const decoded = jwt.verify(token, 'letscarpool')
 

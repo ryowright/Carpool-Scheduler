@@ -11,6 +11,7 @@ const helpers = require('../helpers/helpers')
 const auth = require('../middleware/auth')
 
 const hostURL = process.env.HOST_URL
+const nodeEnv = process.env.NODE_ENV
 
 router.get('/', (req, res) => {
     res.send('User Home Page')
@@ -18,7 +19,7 @@ router.get('/', (req, res) => {
 
 router.post('/registertest', async (req, res) => {
     console.log(req.body)
-    res.send(req.body)
+    return res.send(req.body)
 })
 
 /* USER REGISTRATION */
@@ -29,17 +30,6 @@ router.post('/register', async (req, res) => {
     if (!validator.isEmail(email)) {
         return res.status(400).send({ error: 'Email is not valid.' })
     }
-
-    // Check for duplicate email
-    pool.query(`SELECT * FROM users WHERE email=$1`, [email], (err, results) => {
-        if (err) {
-            return console.log(err)
-        }
-
-        if (results.rows.length > 0) {
-            return res.status(400).send({ error: 'Email already in use.' })
-        }
-    })
 
     // Check that first and last name are in valid format
     if (!validator.isAlpha(firstname) || !validator.isAlpha(lastname)) {
@@ -58,7 +48,7 @@ router.post('/register', async (req, res) => {
 
     // If type is 'driver', carspace cannot be empty
     if (type === 'driver' && !carspace) {
-        return res.status(400).send({ error: 'Drivers must enter a carspace (number of members that can fit in car) value.' })
+        return res.status(400).send({ error: 'Drivers must enter a carspace (number of members that can fit in car excluding the driver) value.' })
     }
 
     // If type is 'carpooler', carspace must be empty
@@ -66,7 +56,7 @@ router.post('/register', async (req, res) => {
         return res.status(400).send({ error: 'Carpoolers cannot enter a carspace value.' })
     }
 
-    if (!school || !validator.isAlpha(school)) {
+    if (!school || !validator.isAlpha(validator.blacklist(school, ' ,-'))) {
         return res.status(400).send({ error: 'Please enter/select a valid school.' })
     }
 
@@ -75,18 +65,31 @@ router.post('/register', async (req, res) => {
 
     // Email verification --- Twilio
     const emailToken = crypto.randomBytes(64).toString('hex')
-    helpers.sendVerifyEmail(email, firstname, emailToken, hostURL)
+    if (nodeEnv !== "TEST") {
+        helpers.sendVerifyEmail(email, firstname, emailToken, hostURL)
+    }
 
-    pool.query(`INSERT INTO users(email, firstname, lastname, password, type, carspace, school, email_token)
+    // Check for duplicate email
+    pool.query(`SELECT * FROM users WHERE email=$1`, [email], (err, results) => {
+        if (err) {
+            return res.status(500).send({ error: err })
+        }
+
+        if (results.rows.length > 0) {
+            return res.status(400).send({ error: 'Email already in use.' })
+        }
+
+        pool.query(`INSERT INTO users(email, firstname, lastname, password, type, carspace, school, email_token)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, [email, firstname, lastname, hashedPassword, type, carspace, school, emailToken], 
         (err, results) => {
             if (err) {
-                return console.log(err)
+                return res.status(500).send({ error: err })
             }
 
-            return res.status(201).send({ success: 'New user created.' })
+            return res.status(201).send({ success: 'Registration successful.' })
         }
     )
+    })
 })
 
 /* VERIFY EMAIL */
@@ -94,7 +97,7 @@ router.post('/verify-email', (req, res) => {
     const { emailToken } = req.body
 
     if (!emailToken) {
-        return res.status(400).send({ error: 'Invalid email token.' })
+        return res.status(400).send({ error: 'No email token provided.' })
     }
 
     pool.query(`SELECT id, email FROM users WHERE email_token=$1`, [emailToken], (err, results) => {
@@ -103,7 +106,7 @@ router.post('/verify-email', (req, res) => {
         }
 
         if (results.rows.length === 0) {
-            return res.status(404).send({ error: 'User not found.' })
+            return res.status(404).send({ error: 'User not found. Invalid email token.' })
         }
 
         pool.query(`UPDATE users SET email_token=null, is_verified='true' WHERE email_token=$1`, [emailToken], (err, results) => {
@@ -134,7 +137,7 @@ router.post('/login', (req, res) => {
         }
 
         if (results.rows.length === 0) {
-            return res.status(404).send({ error: 'User not found.' })
+            return res.status(404).send({ error: 'Incorrect credentials.' })
         }
 
         const hashedPassword = results.rows[0].password
@@ -142,8 +145,6 @@ router.post('/login', (req, res) => {
         const userId = results.rows[0].id
 
         const object = await helpers.verifyUserLogin(password, hashedPassword, isVerified)
-
-        console.log(object.status)
 
         if (!object.authenticated) {
             return res.status(object.status).send({ error: object.message })
@@ -155,7 +156,7 @@ router.post('/login', (req, res) => {
                         return console.log(err)
                     }
 
-                    return res.status(object.status).send({ success: object.message })   
+                    return res.status(object.status).send({ success: object.message, token })   
                 }
             )
         }
@@ -164,11 +165,11 @@ router.post('/login', (req, res) => {
 
 /* USER LOGOUT */
 router.post('/logout', auth, (req, res) => {
-    const { token } = req.body
+    const token = req.header('Authorization').replace('Bearer ', '') // works with postman
     const decoded = jwt.verify(token, 'letscarpool')
 
     if (!token) {
-        return res.status(400).send({ error: 'Token does not exist.' })
+        return res.status(401).send({ error: 'Invalid token.' })
     }
 
     pool.query(`DELETE FROM user_session_tokens WHERE user_id=$1 AND session_token=$2`, [decoded.id, token], (err, results) => {
@@ -183,6 +184,10 @@ router.post('/logout', auth, (req, res) => {
 /* FORGOT/RESET PASSWORD EMAIL */
 router.post('/reset-password-email', (req, res) => {
     const { email } = req.body
+
+    if (!email) {
+        return res.status(400).send({ error: 'Please enter an email.' })
+    }
 
     // 1. Verify that email exists
     pool.query(`SELECT id, email, firstname FROM users WHERE email=$1`, [email], (err, results) => {
@@ -210,7 +215,10 @@ router.post('/reset-password-email', (req, res) => {
         })
 
         // 3. Send email with link containing reset token -- twilio
-        helpers.sendPasswordResetEmail(email, firstname, resetToken, hostURL)
+        if (nodeEnv !== "TEST") {
+            helpers.sendPasswordResetEmail(email, firstname, resetToken, hostURL)
+        }
+        
         return res.status(200).send({ success: 'Reset email successfully sent.' })
     })
 })
@@ -226,7 +234,11 @@ router.post('/reset-password', (req, res) => {
         }
 
         if (results.rows.length === 0) {
-            return res.status(404).send({ error: 'Reset token does not exist in database.' })
+            return res.status(404).send({ error: 'Invalid reset token.' })
+        }
+
+        if (!validator.isLength(newPassword, { min: 6, max: 32 })) {
+            return res.status(400).send({ error: 'Password must be between 6 to 32 characters in length.' })
         }
 
         const userId = results.rows[0].user_id
@@ -246,8 +258,9 @@ router.post('/reset-password', (req, res) => {
                     return console.log(err)
                 }
 
-                return res.status(400).send({ error: 'Reset token has expired. Resend verification.' })
+                return res.status(400).send({ error: 'Reset token has expired. Resend reset password email.' })
             })
+            return
         }
 
         // 3. Delete the reset token entry

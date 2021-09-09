@@ -69,7 +69,7 @@ const verifyUserLogin = async (password, hashedPassword, isVerified) => {
     // console.log('verifying login')
     // console.log({ password, hashedPassword, isVerified })
     if (!isVerified) {
-        object.message = 'User is not verified'
+        object.message = 'User is not verified.'
 
         return object
     }

@@ -8,15 +8,17 @@ const auth = async (req, res, next) => {
         const decoded = jwt.verify(token, 'letscarpool')
         pool.query(`SELECT * FROM user_session_tokens WHERE user_id=$1 AND session_token=$2`, [decoded.id, token], (err, results) => {
             if (err) {
-                return res.status(500).send({ err })
+                return res.status(500).send({ error: err })
             }
 
             if (results.rows[0].length === 0) {
                 return res.status(404).send({ error: 'Token not found for user.' })
             }
         })
+
+        next();
     } catch (e) {
-        res.status(401).send(e)
+        return res.status(401).send({ error: 'Invalid token.' })
     }
 }
 

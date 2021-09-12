@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt')
 const sgMail = require('@sendgrid/mail')
+const pool = require('../connectdb')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const sendVerifyEmail = (email, firstname, emailToken, hostURL) => {
@@ -88,8 +89,26 @@ const verifyUserLogin = async (password, hashedPassword, isVerified) => {
     return object
 }
 
+const generateGroupSuffix = (groupName) => {
+    let val = Math.floor(1000 + Math.random() * 9000)
+    let loop = true
+
+    while (loop) {
+        pool.query(`SELECT group_name, group_id_suffix FROM groups
+        WHERE group_name=$1 AND group_id_suffix=$2`, [groupName, val], (err, results) => {
+            if (results.rows.length === 0) {
+                loop = false
+                return
+            }
+            val = Math.floor(1000 + Math.random() * 9000)
+        })
+    }
+    return val
+}
+
 module.exports = {
     verifyUserLogin,
     sendVerifyEmail,
     sendPasswordResetEmail,
+    generateGroupSuffix,
 }

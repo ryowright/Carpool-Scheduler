@@ -15,8 +15,8 @@ CREATE TABLE "users" (
   "type" varchar NOT NULL,
   "carspace" int,
   "school" varchar NOT NULL,
-  "schedule_id" int,
   "email_token" varchar,
+  "group_id" int,
   "is_verified" boolean DEFAULT 'false'
 );
 
@@ -35,10 +35,10 @@ CREATE TABLE "user_session_tokens" (
 
 CREATE TABLE "groups" (
   "id" SERIAL PRIMARY KEY,
-  "group_id_suffix" int UNIQUE,
-  "groupname" varchar,
+  "group_id_suffix" int NOT NULL UNIQUE,
+  "group_name" varchar NOT NULL,
   "description" varchar,
-  "user_id" int,
+  "privacy" varchar NOT NULL DEFAULT "locked",
   "admin_id" int,
   "group_token" varchar
 );
@@ -49,17 +49,16 @@ CREATE TABLE "group_requests" (
   "group_id" int
 );
 
-CREATE TABLE "group_requests" (
-  "id" SERIAL PRIMARY KEY,
-  "user_id" int,
-  "group_id" int
-)
-
 CREATE TABLE "user_schedules" (
   "id" SERIAL PRIMARY KEY,
+  "user_id" int NOT NULL,
+  "group_id" int,
   "day" varchar,
+  "flexibility_early" int,
+  "flexibility_late" int,
   "to_campus" time NOT NULL,
-  "from_campus" time NOT NULL
+  "from_campus" time NOT NULL,
+  "driver" boolean NOT NULL
 );
 
 CREATE TABLE "driver_carpool_schedules" (
@@ -69,7 +68,9 @@ CREATE TABLE "driver_carpool_schedules" (
   "schedule_id" int
 );
 
-ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
+-- ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
+
+ALTER TABLE "users" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "password_change_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
@@ -82,6 +83,10 @@ ALTER TABLE "user_session_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users"
 ALTER TABLE "group_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "group_requests" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
+
+ALTER TABLE "user_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "user_schedulers" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_id") REFERENCES "users" ("id");
 

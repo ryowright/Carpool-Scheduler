@@ -250,7 +250,7 @@ router.post('/reset-password', (req, res) => {
         const currentDate = new Date()
 
         const hoursDiff = Math.abs(currentDate.getTime() - createdDate.getTime()) / 36e5
-        console.log({hoursDiff})
+        // console.log({hoursDiff})
 
         if (hoursDiff > 24) {
             pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2`, [resetToken, userId], (err, results) => {

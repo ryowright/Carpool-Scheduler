@@ -17,6 +17,7 @@ CREATE TABLE "users" (
   "school" varchar NOT NULL,
   "schedule_id" int,
   "email_token" varchar,
+  "group_id" int,
   "is_verified" boolean DEFAULT 'false'
 );
 
@@ -38,7 +39,6 @@ CREATE TABLE "groups" (
   "group_id_suffix" int UNIQUE,
   "groupname" varchar,
   "description" varchar,
-  "user_id" int,
   "admin_id" int,
   "group_token" varchar
 );
@@ -48,12 +48,6 @@ CREATE TABLE "group_requests" (
   "user_id" int,
   "group_id" int
 );
-
-CREATE TABLE "group_requests" (
-  "id" SERIAL PRIMARY KEY,
-  "user_id" int,
-  "group_id" int
-)
 
 CREATE TABLE "user_schedules" (
   "id" SERIAL PRIMARY KEY,
@@ -71,9 +65,11 @@ CREATE TABLE "driver_carpool_schedules" (
 
 ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
 
+ALTER TABLE "users" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
+
 ALTER TABLE "password_change_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
-ALTER TABLE "groups" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+-- ALTER TABLE "groups" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "groups" ADD FOREIGN KEY ("admin_id") REFERENCES "users" ("id");
 

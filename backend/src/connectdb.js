@@ -17,6 +17,5 @@ pool.connect(function(err) {
 });
 
 console.log("Database setup");
-console.log(process.env.DB_CONNECTION_STRING)
 
 module.exports = pool

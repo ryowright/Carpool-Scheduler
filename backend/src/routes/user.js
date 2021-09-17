@@ -13,15 +13,6 @@ const auth = require('../middleware/auth')
 const hostURL = process.env.HOST_URL
 const nodeEnv = process.env.NODE_ENV
 
-router.get('/', (req, res) => {
-    res.send('User Home Page')
-})
-
-router.post('/registertest', async (req, res) => {
-    console.log(req.body)
-    return res.send(req.body)
-})
-
 /* USER REGISTRATION */
 router.post('/register', async (req, res) => {
     const { email, firstname, lastname, password, type, carspace, school } = req.body
@@ -102,7 +93,7 @@ router.post('/verify-email', (req, res) => {
 
     pool.query(`SELECT id, email FROM users WHERE email_token=$1`, [emailToken], (err, results) => {
         if (err) {
-            return console.log(err)
+            return res.status(500).send({ error: err })
         }
 
         if (results.rows.length === 0) {
@@ -111,7 +102,7 @@ router.post('/verify-email', (req, res) => {
 
         pool.query(`UPDATE users SET email_token=null, is_verified='true' WHERE email_token=$1`, [emailToken], (err, results) => {
             if (err) {
-                return console.log(err)
+                return res.status(500).send({ error: err })
             }
 
             return res.status(200).send({ success: 'User successfully verified.' })
@@ -133,7 +124,7 @@ router.post('/login', (req, res) => {
 
     pool.query(`SELECT id, password, is_verified FROM users WHERE email=$1`, [email], async (err, results) => {
         if (err) {
-            return console.log(err)
+            return res.status(500).send({ error: err })
         }
 
         if (results.rows.length === 0) {
@@ -153,7 +144,7 @@ router.post('/login', (req, res) => {
             pool.query(`INSERT INTO user_session_tokens(user_id, session_token) VALUES ($1, $2)`,
                 [userId, token], (err, results) => {
                     if (err) {
-                        return console.log(err)
+                        return res.status(500).send({ error: err })
                     }
 
                     return res.status(object.status).send({ success: object.message, token })   
@@ -174,7 +165,7 @@ router.post('/logout', auth, (req, res) => {
 
     pool.query(`DELETE FROM user_session_tokens WHERE user_id=$1 AND session_token=$2`, [decoded.id, token], (err, results) => {
         if (err) {
-            return console.log(err)
+            return res.status(500).send({ error: err })
         }
 
         return res.status(200).send({ success: 'User logged out successfully.' })
@@ -192,7 +183,7 @@ router.post('/reset-password-email', (req, res) => {
     // 1. Verify that email exists
     pool.query(`SELECT id, email, firstname FROM users WHERE email=$1`, [email], (err, results) => {
         if (err) {
-            return console.log(err)
+            return res.status(500).send({ error: err })
         }
 
         if (results.rows.length === 0) {
@@ -210,7 +201,7 @@ router.post('/reset-password-email', (req, res) => {
 
         pool.query(`INSERT INTO password_change_requests(user_id, reset_token) VALUES ($1, $2)`, [userId, resetToken], (err, results) => {
             if (err) {
-                return console.log(err)
+                return res.status(500).send({ error: err })
             }
         })
 
@@ -230,7 +221,7 @@ router.post('/reset-password', (req, res) => {
     // 1. Get entry for reset token in database
     pool.query(`SELECT * FROM password_change_requests WHERE reset_token=$1`, [resetToken], async (err, results) => {
         if (err) {
-            return console.log(err)
+            return res.status(500).send({ error: err })
         }
 
         if (results.rows.length === 0) {
@@ -245,17 +236,15 @@ router.post('/reset-password', (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 8)
         
         // 2. Check that timestamp is no more than 24 hours apart
-        // console.log(results.rows[0])
         const createdDate = new Date(results.rows[0].created_at)
         const currentDate = new Date()
 
         const hoursDiff = Math.abs(currentDate.getTime() - createdDate.getTime()) / 36e5
-        // console.log({hoursDiff})
 
         if (hoursDiff > 24) {
             pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2`, [resetToken, userId], (err, results) => {
                 if (err) {
-                    return console.log(err)
+                    return res.status(500).send({ error: err })
                 }
 
                 return res.status(400).send({ error: 'Reset token has expired. Resend reset password email.' })
@@ -266,14 +255,14 @@ router.post('/reset-password', (req, res) => {
         // 3. Delete the reset token entry
         pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2`, [resetToken, userId], (err, results) => {
             if (err) {
-                return console.log(err)
+                return res.status(500).send({ error: err })
             }
         })
 
         // 4. Update password for user in database
         pool.query(`UPDATE users SET password=$1 WHERE id=$2`, [hashedPassword, userId], (err, results) => {
             if (err) {
-                return console.log(err)
+                return res.status(500).send({ error: err })
             }
 
             return res.status(200).send({ success: 'Your password has been successfully reset.' })

@@ -17,6 +17,7 @@ CREATE TABLE "users" (
   "school" varchar NOT NULL,
   "email_token" varchar,
   "group_id" int,
+  "admin" boolean DEFAULT 'false',
   "is_verified" boolean DEFAULT 'false'
 );
 
@@ -35,12 +36,11 @@ CREATE TABLE "user_session_tokens" (
 
 CREATE TABLE "groups" (
   "id" SERIAL PRIMARY KEY,
-  "group_id_suffix" int NOT NULL UNIQUE,
+  "group_id_suffix" int NOT NULL,
   "group_name" varchar NOT NULL,
   "description" varchar,
-  "privacy" varchar NOT NULL DEFAULT "locked",
-  "admin_id" int,
-  "group_token" varchar
+  "privacy" varchar NOT NULL DEFAULT 'locked',
+  "group_token" varchar NOT NULL
 );
 
 CREATE TABLE "group_requests" (
@@ -74,10 +74,6 @@ ALTER TABLE "users" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "password_change_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
-ALTER TABLE "groups" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
-
-ALTER TABLE "groups" ADD FOREIGN KEY ("admin_id") REFERENCES "users" ("id");
-
 ALTER TABLE "user_session_tokens" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 ALTER TABLE "group_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
@@ -86,7 +82,7 @@ ALTER TABLE "group_requests" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("
 
 ALTER TABLE "user_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
-ALTER TABLE "user_schedulers" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
+ALTER TABLE "user_schedules" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_id") REFERENCES "users" ("id");
 

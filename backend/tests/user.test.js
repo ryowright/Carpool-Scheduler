@@ -123,7 +123,7 @@ describe('Testing Registration', () => {
             [user.email, user.firstname, user.lastname, hashedPassword, user.type, user.school, user.isVerified])
     })
 
-    test('Should register successfully', async () => {
+    test.only('Should register successfully', async () => {
         const res = await request(app).post(registerPath).send({...regUser})
         expect(res.status).toEqual(201)
         expect(res.body.success).toEqual('Registration successful.')
@@ -135,7 +135,6 @@ describe('Testing Registration', () => {
         expect(res.body.error).toEqual('Email is not valid.')
     })
 
-    // This test is causing an issue
     test('Registration should fail -- Duplicate email', async () => {
         const res = await request(app).post(registerPath).send({...regUser, email: user.email})
         expect(res.status).toEqual(400)

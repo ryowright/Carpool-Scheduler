@@ -10,13 +10,13 @@ const sendVerifyEmail = (email, firstname, emailToken, hostURL) => {
         subject: 'Verify your Carpool Scheduler Email',
         text: `
             Hello ${firstname}, thank you for creating a Carpool Scheduler account.
-            Please copy and paste the address below to verify your account.
-            ${hostURL}/api/user/verify-email?token=${emailToken}`,
+            Please enter the code below into your Carpool Scheduler to verify your account:
+            ${emailToken}`,
         html: `
             <h1>Hello ${firstname},</h1>
             <p>thank you for creating a Carpool Scheduler account.</p>
-            <p>Please click the link below to verify your account.</p>
-            <a href="${hostURL}/api/user/verify-email?token=${emailToken}">Verify your account</a>
+            <p>Please enter the code below into your Carpool Scheduler to verify your account:</p>
+            <h3>${emailToken}</h3>
             <h3>If you did not register this account, please ignore this email.</h3>
             `
     }
@@ -39,14 +39,16 @@ const sendPasswordResetEmail = (email, firstname, resetToken, hostURL) => {
             Hello ${firstname},
             A password reset was requested for your Carpool Scheduler account.
             If you did not request a password reset, please ignore this
-            email. Otherwise, the link below will reset your password.
-            ${hostURL}/reset-password/${resetToken}`,
+            email. Otherwise, enter the code below into your Carpool Scheduler
+            in order to reset your password:
+            ${resetToken}`,
         html: `
             <h1>Hello ${firstname},</h1>
             <p>A password reset was requested for your Carpool Scheduler account.</p>
             <p>If you did not request a password reset, please ignore this email.</p>
-            <p>Otherwise, the link below will reset your password.</p>
-            <a href="${hostURL}/reset-password/${resetToken}">Reset Password</a>
+            <p>Otherwise,  enter the code below into your Carpool Scheduler
+            in order to reset your password</p>
+            <h3>${resetToken}</h3>
             `
             // Link redirects to frontend endpoint
     }
@@ -60,17 +62,11 @@ const sendPasswordResetEmail = (email, firstname, resetToken, hostURL) => {
     })
 }
 
-const verifyUserLogin = async (password, hashedPassword, isVerified) => {
+const verifyUserLogin = async (password, hashedPassword) => {
     var object = {
         authenticated: false,
         status: 401,
         message: ""
-    }
-
-    if (!isVerified) {
-        object.message = 'User is not verified.'
-
-        return object
     }
 
     const match = await bcrypt.compare(password, hashedPassword);

@@ -9,10 +9,11 @@ DROP TABLE IF EXISTS DRIVER_CARPOOL_SCHEDULES CASCADE;
 CREATE TABLE "users" (
   "id" SERIAL PRIMARY KEY,
   "email" varchar UNIQUE NOT NULL,
+  "username" varchar UNIQUE NOT NULL,
   "firstname" varchar NOT NULL,
   "lastname" varchar NOT NULL,
   "password" varchar NOT NULL,
-  "type" varchar NOT NULL,
+  "driver" boolean DEFAULT 'false',
   "carspace" int,
   "school" varchar NOT NULL,
   "email_token" varchar,
@@ -49,16 +50,14 @@ CREATE TABLE "group_requests" (
   "group_id" int
 );
 
-CREATE TABLE "user_schedules" (
+CREATE TABLE "user_daily_schedules" (
   "id" SERIAL PRIMARY KEY,
   "user_id" int NOT NULL,
-  "group_id" int,
   "day" varchar,
   "flexibility_early" int,
   "flexibility_late" int,
   "to_campus" time NOT NULL,
   "from_campus" time NOT NULL,
-  "driver" boolean NOT NULL
 );
 
 CREATE TABLE "driver_carpool_schedules" (
@@ -82,7 +81,7 @@ ALTER TABLE "group_requests" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("
 
 ALTER TABLE "user_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
-ALTER TABLE "user_schedules" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
+-- ALTER TABLE "user_schedules" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_id") REFERENCES "users" ("id");
 

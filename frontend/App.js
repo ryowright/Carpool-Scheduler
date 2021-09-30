@@ -1,34 +1,30 @@
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
-import Login from './components/login'
-import Register from './components/register';
-import RegisterTwo from './components/registertwo';
-import RegisterThree from './components/registerthree';
-import Home from './components/homepage';
-import ForgotPassword from './components/forgotpassword';
-import Settings from './components/settings';
+import React, { useContext, useEffect, useState } from 'react';
+import { BASE_API_URL } from '@env';
+import { StyleSheet, Button } from 'react-native';
+import Login from './components/authentication/login'
+import Register from './components/authentication/register';
+import RegisterTwo from './components/authentication/registertwo';
+import RegisterThree from './components/authentication/registerthree';
+import VerifyEmail from './components/authentication/verifyemail';
+import Home from './components/core/homepage';
+import ForgotPassword from './components/authentication/forgotpassword';
+import ForgotPasswordCode from './components/authentication/forgotpasswordcode';
+import ResetPassword from './components/authentication/resetpassword'
+import Settings from './components/core/settings';
+import SearchGroup from './components/core/searchgroup';
+import CreateGroup from './components/core/creategroup';
+import GroupHome from './components/core/grouphome';
+import CreateGroupTwo from './components/core/creategrouptwo';
+import GroupDetail from './components/core/groupdetail';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-
-export const UserContext = React.createContext();
-const userDict = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  password: "",
-  confirmPass: "",
-  school: "",
-  setFirstName: () => {},
-  setLastName: () => {},
-  setEmail: () => {},
-  setPassword: () => {},
-  setConfirmPass: () => {},
-  setSchool: () => {}
-}
+import { UserContext } from './usercontext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createNativeStackNavigator();
 
 const MyStack = (props) => {
+
   return (
     <NavigationContainer>
       <UserContext.Provider value={props.value}>
@@ -37,37 +33,116 @@ const MyStack = (props) => {
             headerShown: false
           }}
         >
-          <Stack.Screen 
-            name="Login"
-            component={Login}
-          />
-          <Stack.Screen 
-            name="Registration"
-            component={Register}
-          />
-          <Stack.Screen 
-            name="Registration Two"
-            component={RegisterTwo}
-          />
-          <Stack.Screen 
-            name="Registration Three"
-            component={RegisterThree}
-          />
-          <Stack.Screen 
-            name="Home"
-            component={Home}
-          />
-          <Stack.Screen 
-            name="Settings"
-            component={Settings}
-            options={{
-              headerShown: true
-            }}
-          />
-          <Stack.Screen 
-            name="Forgot Password"
-            component={ForgotPassword}
-          />
+          {!props.value.isAuth ? (
+            <>
+              <Stack.Screen 
+                name="Login"
+                component={Login}
+              />
+              <Stack.Screen 
+                name="Registration"
+                component={Register}
+                options={{
+                  headerShown: true,
+                  title: "Create an Account"
+                }}
+              />
+              <Stack.Screen 
+                name="Registration Two"
+                component={RegisterTwo}
+                options={{
+                  headerShown: true,
+                  title: "Create an Account"
+                }}
+              />
+              <Stack.Screen 
+                name="Registration Three"
+                component={RegisterThree}
+                options={{
+                  headerShown: true,
+                  title: "Create an Account"
+                }}
+              />
+              <Stack.Screen 
+                name="Verify Email"
+                component={VerifyEmail}
+              />
+              <Stack.Screen 
+                name="Forgot Password"
+                component={ForgotPassword}
+                options={{
+                  headerShown: true,
+                  title: "Reset Your Password"
+                }}
+              />
+              <Stack.Screen
+                name="Forgot Password Code"
+                component={ForgotPasswordCode}
+              />
+              <Stack.Screen
+                name="Reset Password"
+                component={ResetPassword}
+              />
+            </>
+          ) : (
+            !props.value.groupId ? (
+              <>
+                <Stack.Screen 
+                  name="Home"
+                  component={Home}
+                />
+                <Stack.Screen 
+                name="Search Group"
+                component={SearchGroup}
+                options={{
+                  headerShown: true,
+                  title: "Search for a Group",
+                }}
+              />
+              <Stack.Screen 
+                name="Create Group"
+                component={CreateGroup}
+                options={{
+                  headerShown: true,
+                  title: "Create a Group",
+                }}
+              />
+              <Stack.Screen 
+                name="Create Group Two"
+                component={CreateGroupTwo}
+                options={{
+                  headerShown: true,
+                  title: "Create a Group",
+                }}
+              />
+              <Stack.Screen 
+                name="Group Detail"
+                component={GroupDetail}
+              />
+              <Stack.Screen 
+                name="Settings"
+                component={Settings}
+                options={{
+                  headerShown: true
+                }}
+              />
+              </>
+            ) : (
+              <>
+                <Stack.Screen 
+                name="Group Home"
+                component={GroupHome}
+              />
+              <Stack.Screen 
+                name="Settings"
+                component={Settings}
+                options={{
+                  headerShown: true
+                }}
+              />
+              </>
+            )
+          )}
         </Stack.Navigator>
       </UserContext.Provider>
     </NavigationContainer>
@@ -81,6 +156,10 @@ export default function App() {
   const [password, setPassword] = useState("")
   const [confirmPass, setConfirmPass] = useState("")
   const [school, setSchool] = useState("")
+  const [userId, setUserId] = useState("")
+  const [resetToken, setResetToken] = useState("")
+  const [isAuth, setIsAuth] = useState(false)
+  const [groupId, setGroupId] = useState(null)
 
   const value = {
     firstName,
@@ -89,13 +168,53 @@ export default function App() {
     password,
     confirmPass,
     school,
+    userId,
+    resetToken,
+    isAuth,
+    groupId,
     setFirstName,
     setLastName,
     setEmail,
     setPassword,
     setConfirmPass,
-    setSchool
+    setSchool,
+    setUserId,
+    setResetToken,
+    setIsAuth,
+    setGroupId
   }
+
+  useEffect(() => {
+    const getMyGroup = (token) => {
+      const URL = BASE_API_URL + '/group/me'
+      fetch(URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        setGroupId(data.group.id)
+        console.log(data)
+      })
+      .catch(error => {
+        console.log(error)
+      })
+    }
+
+    async function checkAuth() {
+      const token = await AsyncStorage.getItem('@session_token')
+      if (!token) {
+        setIsAuth(false)
+      } else {
+        setIsAuth(true)
+        getMyGroup(token)
+      }
+    }
+    checkAuth()
+  }, [])
 
   return (
     <MyStack value={value} />

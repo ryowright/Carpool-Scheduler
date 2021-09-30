@@ -123,7 +123,7 @@ describe('Testing Registration', () => {
             [user.email, user.firstname, user.lastname, hashedPassword, user.type, user.school, user.isVerified])
     })
 
-    test.only('Should register successfully', async () => {
+    test('Should register successfully', async () => {
         const res = await request(app).post(registerPath).send({...regUser})
         expect(res.status).toEqual(201)
         expect(res.body.success).toEqual('Registration successful.')
@@ -242,11 +242,11 @@ describe('Testing Forgot/Reset Password Email', () => {
     test('Forgot/Reset password email should fail -- Email does not exist', async () => {
         const res = await request(app).post('/api/user/reset-password-email').send({ email: "nonexistent@gmail.com" })
         expect(res.status).toEqual(404)
-        expect(res.body.error).toEqual('Email address does not exist in our database.')
+        expect(res.body.error).toEqual('No account associated with this email address.')
     })
 })
 
-describe('Testing Forgot/Reset Password', () => {
+describe('Testing Forgot/Reset Password Code', () => {
     beforeEach(async () => {
         const hashedPassword = await bcrypt.hash(user.password, 8);
     
@@ -256,52 +256,40 @@ describe('Testing Forgot/Reset Password', () => {
 
         pool.query(`SELECT id, email, firstname FROM users WHERE email=$1`, [user.email], (err, results) => {
             if (err) {
-                return console.log(err)
+                return console.error(err)
             }
     
             if (results.rows.length === 0) {
-                return res.status(404).send({ error: 'Email address does not exist in our database.' })
+                return console.error('No account associated with this email.')
             }
     
             const userId = results.rows[0].id
 
             if (!userId) {
-                return res.status(404).send({ error: 'Unable to find user Id.' })
+                return console.error('Unable to find user ID.')
             }
     
             // 2. Generate reset token and insert into database
-            const resetToken = "testresettoken"
+            const resetToken = "12345678"
     
             pool.query(`INSERT INTO password_change_requests(user_id, reset_token) VALUES ($1, $2)`, [userId, resetToken], (err, results) => {
                 if (err) {
-                    return console.log(err)
+                    return console.error(err)
                 }
             })
         })
     })
 
-    test('Successfully reset password', async () => {
-        const res = await request(app).post('/api/user/reset-password').send({ resetToken: "testresettoken", newPassword: "newpassword" })
+    test('Successfully confirm reset code', async () => {
+        const res = await request(app).post('/api/user/reset-password-code').send({ resetToken: "12345678" })
         expect(res.status).toEqual(200)
-        expect(res.body.success).toEqual('Your password has been successfully reset.')
+        expect(res.body.success).toEqual('Code successfully confirmed.')
     })
 
-    test('Forgot/Reset password should fail -- Invalid token', async () => {
-        const res = await request(app).post('/api/user/reset-password').send({ resetToken: "invalidtoken", newPassword: "newpassword" })
+    test('Forgot/Reset password code should fail -- Invalid code', async () => {
+        const res = await request(app).post('/api/user/reset-password-code').send({ resetToken: "invalidtoken" })
         expect(res.status).toEqual(404)
-        expect(res.body.error).toEqual('Invalid reset token.')
-    })
-
-    test('Forgot/Reset password should fail -- Password is too short', async () => {
-        const res = await request(app).post('/api/user/reset-password').send({ resetToken: "testresettoken", newPassword: "pass" })
-        expect(res.status).toEqual(400)
-        expect(res.body.error).toEqual('Password must be between 6 to 32 characters in length.')
-    })
-
-    test('Forgot/Reset password should fail -- Password is too long', async () => {
-        const res = await request(app).post('/api/user/reset-password').send({ resetToken: "testresettoken", newPassword: "thispasswordiswaytoolongbecauseitexceedsthemaxlimitof32characters" })
-        expect(res.status).toEqual(400)
-        expect(res.body.error).toEqual('Password must be between 6 to 32 characters in length.')
+        expect(res.body.error).toEqual('Invalid reset code.')
     })
 
     // Test password reset request expiration
@@ -312,8 +300,88 @@ describe('Testing Forgot/Reset Password', () => {
             await pool.query(`UPDATE password_change_requests SET created_at=$1 WHERE user_id=$2`, [created_at, userId])
         })
 
-        const res = await request(app).post('/api/user/reset-password').send({ resetToken: "testresettoken", newPassword: "newpassword" })
+        const res = await request(app).post('/api/user/reset-password-code').send({ resetToken: "12345678" })
         expect(res.status).toEqual(400)
-        expect(res.body.error).toEqual('Reset token has expired. Resend reset password email.')
+        expect(res.body.error).toEqual('Reset code has expired. Resend reset password email.')
+    })
+})
+
+describe('Testing Password Reset', () => {
+    beforeEach(async () => {
+        const hashedPassword = await bcrypt.hash(user.password, 8);
+    
+        await pool.query(`INSERT INTO users(email, firstname, lastname, password, type, school, is_verified)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [user.email, user.firstname, user.lastname, hashedPassword, user.type, user.school, user.isVerified])
+
+        pool.query(`SELECT id, email, firstname FROM users WHERE email=$1`, [user.email], (err, results) => {
+            if (err) {
+                return console.error(err)
+            }
+    
+            if (results.rows.length === 0) {
+                return console.error('No account associated with this email.')
+            }
+    
+            const userId = results.rows[0].id
+
+            if (!userId) {
+                return console.error('Unable to find user ID.')
+            }
+    
+            // 2. Generate reset token and insert into database
+            const resetToken = "12345678"
+    
+            pool.query(`INSERT INTO password_change_requests(user_id, reset_token) VALUES ($1, $2)`, [userId, resetToken], (err, results) => {
+                if (err) {
+                    return console.error(err)
+                }
+            })
+        })
+    })
+
+    test('Successfully reset password', async () => {
+        const codeRes = await request(app).post('/api/user/reset-password-code').send({ resetToken: "12345678" })
+        const res = await request(app).post('/api/user/reset-password').send({
+            newPassword: "newpassword", 
+            userId: codeRes.body.userId,
+            resetToken: codeRes.body.resetToken 
+        })
+        expect(res.status).toEqual(200)
+        expect(res.body.success).toEqual('Your password has been successfully reset.')
+    })
+
+    test('Reset password should fail -- Password is too short', async () => {
+        const res = await request(app).post('/api/user/reset-password').send({ newPassword: "pass" })
+        expect(res.status).toEqual(400)
+        expect(res.body.error).toEqual('Password must be between 6 to 32 characters in length.')
+    })
+
+    test('Reset password should fail -- Password is too long', async () => {
+        const res = await request(app).post('/api/user/reset-password').send({ newPassword: "thispasswordiswaytoolongbecauseitexceedsthemaxlimitof32characters" })
+        expect(res.status).toEqual(400)
+        expect(res.body.error).toEqual('Password must be between 6 to 32 characters in length.')
+    })
+
+    test('Reset password should fail -- invalid user id.', async () => {
+        const codeRes = await request(app).post('/api/user/reset-password-code').send({ resetToken: "12345678" })
+        const res = await request(app).post('/api/user/reset-password').send({
+            newPassword: "newpassword", 
+            userId: -20,
+            resetToken: codeRes.body.resetToken 
+        })
+        expect(res.status).toEqual(400)
+        expect(res.body.error).toEqual('Invalid user id or invalid/expired reset code.')
+    })
+
+    test('Reset password should fail -- invalid reset code', async () => {
+        const codeRes = await request(app).post('/api/user/reset-password-code').send({ resetToken: "12345678" })
+        const res = await request(app).post('/api/user/reset-password').send({
+            newPassword: "newpassword", 
+            userId: codeRes.body.userId,
+            resetToken: "24"
+        })
+        expect(res.status).toEqual(400)
+        expect(res.body.error).toEqual('Invalid user id or invalid/expired reset code.')
     })
 })

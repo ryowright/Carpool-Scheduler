@@ -1,20 +1,19 @@
-import React, { useContext, useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Linking, KeyboardAvoidingView } from "react-native"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { UserContext } from "../App";
+import React, { useState, useContext } from "react";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView } from "react-native";
+import CustomInput from '../custom/custominput';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserContext } from "../../usercontext";
 
-export default function RegisterTwo({ navigation }) {
+export default function Register({ navigation }) {
     const [message, setMessage] = useState("")
     const [error, setError] = useState(true)
 
-    const { 
-        password,
-        confirmPass,
-        school,
-        setPassword,
-        setConfirmPass,
-        setSchool
-    } = useContext(UserContext)
+    const { firstName, 
+            lastName,
+            email,
+            setFirstName,
+            setLastName,
+            setEmail } = useContext(UserContext)
 
     return (
         <View 
@@ -29,42 +28,47 @@ export default function RegisterTwo({ navigation }) {
                 >
                     Carpool Scheduler
                 </Text>
-                <TextInput
+                <CustomInput 
+                    inputTitle="First Name"
+                    onChangeText={setFirstName}
+                    value={firstName}
+                />
+                <CustomInput 
+                    inputTitle="Last Name"
+                    onChangeText={setLastName}
+                    value={lastName}
+                />
+                <CustomInput 
+                    inputTitle="Email"
+                    onChangeText={setEmail}
+                    value={email}
+                    keyboardType="email-address"
+                />
+                {/* <TextInput
                     style={styles.input}
-                    onChangeText={setPassword}
-                    value={password}
-                    secureTextEntry={true}
-                    placeholder="Enter a Password"
+                    onChangeText={setFirstName}
+                    value={firstName}
+                    placeholder="First Name"
                 />
                 <TextInput 
                     style={styles.input}
-                    onChangeText={setConfirmPass}
-                    value={confirmPass}
-                    secureTextEntry={true}
-                    placeholder="Confirm Password"
+                    onChangeText={setLastName}
+                    value={lastName}
+                    placeholder="Last Name"
                 />
                 <TextInput 
                     style={styles.input}
-                    onChangeText={setSchool}
-                    value={school}
-                    placeholder="Enter Your School or University"
-                />
+                    onChangeText={setEmail}
+                    value={email}
+                    keyboardType="email-address"
+                    placeholder="Email"
+                /> */}
                 {!message ? null : 
                     <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
                 }
                 <View style={styles.loginContainer}>
                     <TouchableOpacity
-                        onPress={() => {
-                            if (password !== confirmPass) {
-                                console.log({password, confirmPass})
-                                setError(true)
-                                setMessage("Your passwords do not match.")
-                            } else {
-                                setError(false)
-                                setMessage("")
-                                navigation.navigate('Registration Three')
-                            }
-                        }}
+                        onPress={() => {navigation.navigate('Registration Two')}}
                         style={styles.loginBtn}
                     >
                         <Text style={styles.loginText}>
@@ -72,7 +76,7 @@ export default function RegisterTwo({ navigation }) {
                         </Text>
                     </TouchableOpacity>
                     <Text
-                        style={{ color: 'gray' }}
+                        style={{ color: '#9aa0a6' }}
                     >
                         Already Have an Account?
                         <Text

@@ -7,15 +7,10 @@ const auth = async (req, res, next) => {
         // const token = req.headers.authorization.replace('Bearer ', '') // works with axios
         const decoded = jwt.verify(token, 'letscarpool')
         pool.query(`SELECT * FROM user_session_tokens WHERE user_id=$1 AND session_token=$2`, [decoded.id, token], (err, results) => {
-            if (err) {
-                return res.status(500).send({ error: err })
-            }
-
-            if (results.rows[0].length === 0) {
-                return res.status(404).send({ error: 'Token not found for user.' })
+            if (!token || !decoded || results.rows.length === 0) {
+                throw new Error('Invalid token.')
             }
         })
-
         next();
     } catch (e) {
         return res.status(401).send({ error: 'Invalid token.' })

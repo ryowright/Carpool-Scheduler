@@ -1,13 +1,11 @@
-import React, { useState, useContext } from "react"
+import React, { useState } from "react"
 import { View,
         Text,
         TextInput,
         StyleSheet,
         TouchableOpacity,
         KeyboardAvoidingView } from "react-native"
-import Icon from "react-native-vector-icons/Ionicons"
 import { IconButton, Colors } from 'react-native-paper'
-import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function Home({ navigation }) {
     const [message, setMessage] = useState("")
@@ -37,16 +35,16 @@ export default function Home({ navigation }) {
                 </Text>
                 <View style={styles.loginContainer}>
                     <TouchableOpacity 
-                        onPress={() => console.log('Create a group')}
+                        onPress={() => navigation.navigate('Create Group')}
                         style={styles.groupBtn}
                     >
-                        <Text>Create a group</Text>
+                        <Text style={styles.groupBtnText}>Create a group</Text>
                     </TouchableOpacity>
                     <TouchableOpacity 
-                        onPress={() => console.log('Join a group')}
+                        onPress={() => navigation.navigate('Search Group')}
                         style={styles.groupBtn}
                     >
-                        <Text>Join a group</Text>
+                        <Text style={styles.groupBtnText}>Search for a group</Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -84,12 +82,15 @@ const styles = StyleSheet.create({
     },
     groupBtn: {
         width: 200,
-        borderRadius: 20,
-        height: 40,
+        borderRadius: 10,
+        height: 45,
         alignItems: "center",
         justifyContent: "center",
         marginTop: 20,
         backgroundColor: "#106BB1",
         margin: 20,
     },
+    groupBtnText: {
+        color: "white"
+    }
 })

@@ -1,44 +1,59 @@
+import { BASE_API_URL } from "@env"
 import React, { useState, useContext } from "react";
 import { View,
         Text,
         TextInput,
         StyleSheet,
         TouchableOpacity,
-        Linking,
         KeyboardAvoidingView } from "react-native"
-import { Picker } from "@react-native-community/picker"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { UserContext } from "../App";
+import CustomInput from '../custom/custominput';
+import { UserContext } from "../../usercontext";
 
-export default function RegisterTwo({ navigation }) {
-    const [carspace, setCarspace] = useState("")
-    const [userType, setUserType] = useState("")
+export default function VerifyEmail({ navigation }) {
+    const [emailToken, setEmailToken] = useState("")
     const [message, setMessage] = useState("")
     const [error, setError] = useState(true)
 
     const {
-        firstName,
-        lastName,
         email,
-        password,
-        school
+        setIsAuth
     } = useContext(UserContext)
 
-    const register = async () => {
-        const URL = 'http://10.0.0.27:5000/api/user/register'
+    const resendVerification = () => {
+        const URL = BASE_API_URL + '/user/resend-verify-email'
+        fetch(URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                setMessage(data.error)
+                setError(true)
+                setIsAuth(false)
+            } else if (data.success) {
+                setMessage(data.success)
+                setError(false)
+            }
+            // console.log(data)
+        })
+        .catch((error) => {
+        console.error('Error:', error);
+        });
+    } 
+
+    const verifyEmail = async () => {
+        const URL = BASE_API_URL + '/user/verify-email'
         fetch(URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            firstname: firstName,
-            lastname: lastName,
-            email,
-            school,
-            password,
-            carspace,
-            type: userType
+            emailToken
         }),
         })
         .then(response => response.json())
@@ -46,10 +61,12 @@ export default function RegisterTwo({ navigation }) {
             if (data.error) {
                 setMessage(data.error)
                 setError(true)
+                setIsAuth(false)
             } else if (data.success) {
                 setMessage(data.success)
                 setError(false)
-                navigation.navigate('Home')
+                setIsAuth(false)
+                navigation.navigate('Login')
             }
             console.log(data)
         })
@@ -71,46 +88,42 @@ export default function RegisterTwo({ navigation }) {
                 >
                     Carpool Scheduler
                 </Text>
-                <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={userType}
-                        style={styles.userType}
-                        onValueChange={(itemValue, itemIndex) =>
-                            setUserType(itemValue)
-                        }>
-                        <Picker.Item label="Carpooler" value="carpooler" />
-                        <Picker.Item label="Driver" value="driver" />
-                    </Picker>
-                </View>
+                <CustomInput 
+                    inputTitle="Verification Code"
+                    onChangeText={setEmailToken}
+                    value={emailToken}
+                    keyboardType="number-pad"
+                    maxLength={8}
+                />
+                {/* <TextInput 
+                    style={styles.input}
+                    onChangeText={setEmailToken}
+                    value={emailToken}
+                    keyboardType="number-pad"
+                    maxLength={8}
+                    placeholder="Enter Verification Code"
+                /> */}
+                {!message ? null : 
+                    <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
+                }
                 <View style={styles.loginContainer}>
-                    {userType === "driver" ? 
-                        <TextInput 
-                            style={styles.input}
-                            onChangeText={setCarspace}
-                            value={carspace}
-                            placeholder="Enter carspace (excluding yourself)"
-                    /> : null
-                    }
-                    {!message ? null : 
-                        <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
-                    }
                     <TouchableOpacity
-                        onPress={() => {register}}
+                        onPress={() => verifyEmail()}
                         style={styles.loginBtn}
                     >
                         <Text style={styles.loginText}>
-                            Register
+                            Verify Email
                         </Text>
                     </TouchableOpacity>
                     <Text
-                        style={{ color: 'gray' }}
+                        style={{ color: '#9aa0a6' }}
                     >
-                        Already Have an Account?
+                        Didn't Receive an Email?
                         <Text
-                            style={styles.forgotPasswordLink}
-                            onPress={() => navigation.navigate('Login')}
+                            style={styles.link}
+                            onPress={() => resendVerification()}
                         >
-                            {" Sign In"}
+                            {" Resend email."}
                         </Text>
                     </Text>
                 </View>
@@ -133,7 +146,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 40,
-        // marginBottom: 10
+        marginBottom: 10
     },
     input: {
         width: 270,
@@ -145,24 +158,13 @@ const styles = StyleSheet.create({
         backgroundColor: "#78B5E4",
         color: "black"
     },
-    userType: {
-        height: 80,
-        width: 200,
-        marginBottom: 20
-    },
-    pickerContainer: {
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 30,
-    },
     loginContainer: {
-        alignItems: "center",
-        margin: 20
+        alignItems: "center"
     },
     loginBtn: {
-        width: 200,
-        borderRadius: 20,
-        height: 40,
+        width: 160,
+        borderRadius: 10,
+        height: 45,
         alignItems: "center",
         justifyContent: "center",
         marginTop: 20,
@@ -173,6 +175,10 @@ const styles = StyleSheet.create({
         color: "white",
     },
     forgotPasswordLink: {
+        color: "blue",
+        marginBottom: 4,
+    },
+    link: {
         color: "blue",
         marginBottom: 4,
     }

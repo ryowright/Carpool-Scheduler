@@ -4,6 +4,7 @@ const router = require('express').Router()
 
 const pool = require('../connectdb')
 const auth = require('../middleware/auth')
+const { group } = require('console')
 
 /* CREATE GROUP -- TESTS DONE */
 router.post('/create', auth, (req, res) => {
@@ -120,12 +121,37 @@ router.get('/me', auth, (req, res) => {
     })
 })
 
+/* GET A GROUP BY ITS ID */
+router.get('/get-group', auth, (req, res) => {
+    const groupId = req.query.id
+
+    if (!groupId) {
+        return res.status(404).send({ group: null })
+    }
+
+    pool.query(`SELECT id, group_id_suffix, group_name, description, privacy
+        FROM groups WHERE id=$1`, [groupId], (err, results) => {
+            if (err) {
+                return res.status(500).send({ error: err })
+            }
+
+            const group = results.rows[0]
+            console.log(group)
+            if (group.privacy === 'private') {
+                return res.status(404).send({ group: null })
+            }
+
+            return res.status(200).send({ group })
+        })
+})
+
 /* SEARCH FOR GROUPS -- TESTS DONE */
 router.get('/search', auth, (req, res) => {
     const searchName = req.query.group_name
+    console.log(searchName)
 
-    pool.query(`SELECT id, group_id_suffix, group_name, description,
-        privacy FROM groups WHERE group_name LIKE '%' || $1 || '%'`,
+    pool.query(`SELECT DISTINCT id, group_id_suffix, group_name, privacy
+        FROM groups WHERE group_name LIKE '%' || $1 || '%' LIMIT 5`,
         [searchName], (err, results) => {
             if (err) {
                 return res.status(500).send({ error: err })
@@ -134,12 +160,8 @@ router.get('/search', auth, (req, res) => {
             // Filter out groups that are private
             const groups = results.rows.filter(group => group.privacy !== 'private')
 
-            if (groups.length === 0) {
-                return res.status(404).send({ error: `No groups found with name \'${searchName}\'`})
-            }
-
             return res.status(200).send({
-                success: 'Successfully queried groups.',
+                // success: 'Successfully queried groups.',
                 groups
             })
         }
@@ -200,7 +222,7 @@ router.patch('/join-token', auth, (req, res) => {
     })
 })
 
-/* GET ALL GROUP JOIN REQUESTS -- TESTS DONE */
+/* GET ALL JOIN REQUESTS FOR A GROUP -- TESTS DONE */
 router.get('/requests', auth, (req, res) => {
     const token = req.header('Authorization').replace('Bearer ', '') // works with postman
     const decoded = jwt.verify(token, 'letscarpool')
@@ -231,6 +253,31 @@ router.get('/requests', auth, (req, res) => {
                 success: 'Successfully retrieved all join requests for group.',
                 requests
             })
+        })
+    })
+})
+
+/* CHECK IF A USER HAS A PENDING REQUEST FOR A GROUP -- DONE (NEEDS TESTS) */
+router.get('/myrequest', auth, (req, res) => {
+    const token = req.header('Authorization').replace('Bearer ', '') // works with postman
+    const decoded = jwt.verify(token, 'letscarpool')
+    const id = decoded.id
+    const groupId = Number(req.query.group_id)
+
+    pool.query(`SELECT * FROM group_requests WHERE user_id=$1 AND group_id=$2`, [id, groupId], (err, results) => {
+        if (err) {
+            return res.status(500).send({ error: err })
+        }
+
+        const requests = results.rows
+
+        if (requests.length === 0) {
+            return res.status(400).send({ error: 'Request does not exist.' })
+        }
+
+        return res.status(200).send({
+            success: 'User has a pending request to join this group.',
+            reqPending: true
         })
     })
 })

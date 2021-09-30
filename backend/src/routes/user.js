@@ -17,8 +17,6 @@ const nodeEnv = process.env.NODE_ENV
 router.post('/register', async (req, res) => {
     const { email, firstname, lastname, password, type, carspace, school } = req.body
 
-    console.log(req.body)
-
     if (!req.body) {
         return res.status(400).send({ error: 'Please enter the required information.' })
     }
@@ -61,8 +59,10 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 8)
 
     // Email verification --- Twilio
-    const emailToken = crypto.randomBytes(64).toString('hex')
+    // const emailToken = crypto.randomBytes(64).toString('hex')
+    const emailToken = Math.random().toString().slice(2,10);
     if (nodeEnv !== "TEST") {
+        console.log('send verify email')
         helpers.sendVerifyEmail(email, firstname, emailToken, hostURL)
     }
 
@@ -80,12 +80,34 @@ router.post('/register', async (req, res) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, [email, firstname, lastname, hashedPassword, type, carspace, school, emailToken], 
         (err, results) => {
             if (err) {
+                console.log({err})
                 return res.status(500).send({ error: err })
             }
 
             return res.status(201).send({ success: 'Registration successful.' })
         }
     )
+    })
+})
+
+/* RESEND VERIFICATION EMAIL */
+router.post('/resend-verify-email', (req, res) => {
+    const { email } = req.body
+    const emailToken = Math.random().toString().slice(2,10);
+
+    pool.query(`UPDATE users SET email_token=$1 WHERE email=$2 RETURNING firstname`, [emailToken, email], (err, results) => {
+        if (err) {
+            return res.status(500).send({ error: err })
+        }
+
+        if (results.rows.length === 0) {
+            return res.status(400).send({ error: 'Email not found.' })
+        }
+
+        const firstname = results.rows[0].firstname
+        helpers.sendVerifyEmail(email, firstname, emailToken, hostURL)
+
+        return res.status(200).send({ success: 'Verification email successfully sent.' })
     })
 })
 
@@ -146,6 +168,9 @@ router.post('/login', (req, res) => {
         if (!object.authenticated) {
             return res.status(object.status).send({ error: object.message })
         } else {
+            if (!isVerified) {
+                return res.status(400).send({ error: 'User is not verified.', isVerified })
+            }
             const token = jwt.sign({ id: userId.toString() }, 'letscarpool', { expiresIn: '1 day' })
             pool.query(`INSERT INTO user_session_tokens(user_id, session_token) VALUES ($1, $2)`,
                 [userId, token], (err, results) => {
@@ -164,6 +189,10 @@ router.post('/login', (req, res) => {
 router.post('/logout', auth, (req, res) => {
     const token = req.header('Authorization').replace('Bearer ', '') // works with postman
     const decoded = jwt.verify(token, 'letscarpool')
+
+    // if (!req.valid) {
+    //     return
+    // }
 
     if (!token) {
         return res.status(401).send({ error: 'Invalid token.' })
@@ -193,7 +222,7 @@ router.post('/reset-password-email', (req, res) => {
         }
 
         if (results.rows.length === 0) {
-            return res.status(404).send({ error: 'Email address does not exist in our database.' })
+            return res.status(404).send({ error: 'No account associated with this email address.' })
         }
 
         const userId = results.rows[0].id
@@ -203,7 +232,7 @@ router.post('/reset-password-email', (req, res) => {
         }
 
         // 2. Generate reset token and insert into database
-        const resetToken = crypto.randomBytes(64).toString('hex')
+        const resetToken = Math.random().toString().slice(2,10);
 
         pool.query(`INSERT INTO password_change_requests(user_id, reset_token) VALUES ($1, $2)`, [userId, resetToken], (err, results) => {
             if (err) {
@@ -221,8 +250,8 @@ router.post('/reset-password-email', (req, res) => {
 })
 
 /* FORGOT/RESET PASSWORD */
-router.post('/reset-password', (req, res) => {
-    const { resetToken, newPassword } = req.body
+router.post('/reset-password-code', (req, res) => {
+    const { resetToken } = req.body
 
     // 1. Get entry for reset token in database
     pool.query(`SELECT * FROM password_change_requests WHERE reset_token=$1`, [resetToken], async (err, results) => {
@@ -231,16 +260,11 @@ router.post('/reset-password', (req, res) => {
         }
 
         if (results.rows.length === 0) {
-            return res.status(404).send({ error: 'Invalid reset token.' })
-        }
-
-        if (!validator.isLength(newPassword, { min: 6, max: 32 })) {
-            return res.status(400).send({ error: 'Password must be between 6 to 32 characters in length.' })
+            return res.status(404).send({ error: 'Invalid reset code.' })
         }
 
         const userId = results.rows[0].user_id
-        const hashedPassword = await bcrypt.hash(newPassword, 8)
-        
+
         // 2. Check that timestamp is no more than 24 hours apart
         const createdDate = new Date(results.rows[0].created_at)
         const currentDate = new Date()
@@ -253,17 +277,32 @@ router.post('/reset-password', (req, res) => {
                     return res.status(500).send({ error: err })
                 }
 
-                return res.status(400).send({ error: 'Reset token has expired. Resend reset password email.' })
+                return res.status(400).send({ error: 'Reset code has expired. Resend reset password email.' })
             })
             return
         }
 
-        // 3. Delete the reset token entry
-        pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2`, [resetToken, userId], (err, results) => {
-            if (err) {
-                return res.status(500).send({ error: err })
-            }
-        })
+        return res.status(200).send({ success: 'Code successfully confirmed.', userId, resetToken })
+    })
+})
+
+router.post('/reset-password', async (req, res) => {
+    const { newPassword, userId, resetToken } = req.body
+    const hashedPassword = await bcrypt.hash(newPassword, 8)
+
+    if (!validator.isLength(newPassword, { min: 6, max: 32 })) {
+        return res.status(400).send({ error: 'Password must be between 6 to 32 characters in length.' })
+    }
+
+    // 3. Delete the reset token entry
+    pool.query(`DELETE FROM password_change_requests WHERE reset_token=$1 AND user_id=$2 RETURNING user_id`, [resetToken, userId], (err, results) => {
+        if (err) {
+            return res.status(500).send({ error: err })
+        }
+
+        if (results.rows.length === 0) {
+            return res.status(400).send({ error: 'Invalid user id or invalid/expired reset code.' })
+        }
 
         // 4. Update password for user in database
         pool.query(`UPDATE users SET password=$1 WHERE id=$2`, [hashedPassword, userId], (err, results) => {

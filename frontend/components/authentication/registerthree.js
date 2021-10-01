@@ -13,7 +13,7 @@ import { UserContext } from "../../usercontext";
 
 export default function RegisterThree({ navigation }) {
     const [carspace, setCarspace] = useState(null)
-    const [userType, setUserType] = useState("carpooler")
+    const [driver, setDriver] = useState(false)
     const [message, setMessage] = useState("")
     const [error, setError] = useState(true)
 
@@ -39,7 +39,7 @@ export default function RegisterThree({ navigation }) {
             school,
             password,
             carspace,
-            type: userType
+            driver
         }),
         })
         .then(response => response.json())
@@ -74,17 +74,17 @@ export default function RegisterThree({ navigation }) {
                 </Text>
                 <View style={styles.pickerContainer}>
                     <Picker
-                        selectedValue={userType}
+                        selectedValue={driver}
                         style={styles.userType}
                         onValueChange={(itemValue, itemIndex) =>
-                            setUserType(itemValue)
+                            setDriver(itemValue)
                         }>
-                        <Picker.Item label="Carpooler" value="carpooler" />
-                        <Picker.Item label="Driver" value="driver" />
+                        <Picker.Item label="Carpooler" value={false} />
+                        <Picker.Item label="Driver" value={true} />
                     </Picker>
                 </View>
                 <View style={styles.loginContainer}>
-                    {userType === "driver" ? 
+                    {driver === true ? 
                         <CustomInput 
                             inputTitle="# of Passengers (Excluding Yourself)"
                             onChangeText={setCarspace}

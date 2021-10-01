@@ -3,13 +3,14 @@ DROP TABLE IF EXISTS PASSWORD_CHANGE_REQUESTS CASCADE;
 DROP TABLE IF EXISTS USER_SESSION_TOKENS CASCADE;
 DROP TABLE IF EXISTS GROUPS CASCADE;
 DROP TABLE IF EXISTS GROUP_REQUESTS CASCADE;
-DROP TABLE IF EXISTS USER_SCHEDULES CASCADE;
+DROP TABLE IF EXISTS USER_DAILY_SCHEDULES CASCADE;
 DROP TABLE IF EXISTS DRIVER_CARPOOL_SCHEDULES CASCADE;
+
+-- Maybe add username field to users later
 
 CREATE TABLE "users" (
   "id" SERIAL PRIMARY KEY,
   "email" varchar UNIQUE NOT NULL,
-  "username" varchar UNIQUE NOT NULL,
   "firstname" varchar NOT NULL,
   "lastname" varchar NOT NULL,
   "password" varchar NOT NULL,
@@ -57,7 +58,7 @@ CREATE TABLE "user_daily_schedules" (
   "flexibility_early" int,
   "flexibility_late" int,
   "to_campus" time NOT NULL,
-  "from_campus" time NOT NULL,
+  "from_campus" time NOT NULL
 );
 
 CREATE TABLE "driver_carpool_schedules" (
@@ -79,7 +80,7 @@ ALTER TABLE "group_requests" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id
 
 ALTER TABLE "group_requests" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
-ALTER TABLE "user_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+ALTER TABLE "user_daily_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
 -- ALTER TABLE "user_schedules" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
@@ -87,10 +88,10 @@ ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_id") REFERENCES 
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("carpooler_id") REFERENCES "users" ("id");
 
-ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
+ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_daily_schedules" ("id");
 
-COMMENT ON COLUMN "users"."type" IS 'driver or carpooler';
+-- COMMENT ON COLUMN "users"."type" IS 'driver or carpooler';
 
 COMMENT ON COLUMN "users"."carspace" IS 'for drivers only; number of seats available, excluding driver';
 
-COMMENT ON COLUMN "user_schedules"."day" IS 'Mon, Tues, Wed, Thurs, or Fri';
+-- COMMENT ON COLUMN "user_schedules"."day" IS 'Mon, Tues, Wed, Thurs, or Fri';

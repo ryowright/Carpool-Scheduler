@@ -1,7 +1,6 @@
 import { BASE_API_URL } from '@env';
-import React, { useState, useContext, useLayoutEffect, useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { View,
-        KeyboardAvoidingView,
         Text,
         TouchableOpacity,
         StyleSheet } from "react-native";
@@ -51,11 +50,11 @@ export default function CreateGroupTwo({ navigation, route }) {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                console.log(data.error)
-            } else {
+            if (data.success) {
                 console.log('create group success')
                 setGroupId(data.groupId)
+            } else {
+                console.log(data.error)
             }
             console.log(data)
         })

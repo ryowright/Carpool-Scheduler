@@ -59,6 +59,7 @@ export default function Login({ navigation }) {
         })
         .then(response => response.json())
         .then(data => {
+            console.log(data)
             if (data.error) {
                 if (data.isVerified === false) {
                     setVerifiedError(true)
@@ -72,7 +73,6 @@ export default function Login({ navigation }) {
                 AsyncStorage.setItem('@session_token', data.token)
                 setIsAuth(true)
             }
-            // console.log(data)
         })
         .catch((error) => {
         console.error('Error:', error);

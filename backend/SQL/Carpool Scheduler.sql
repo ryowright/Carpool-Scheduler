@@ -65,7 +65,7 @@ CREATE TABLE "driver_carpool_schedules" (
   "id" SERIAL PRIMARY KEY,
   "driver_id" int,
   "carpooler_id" int,
-  "schedule_id" int
+  "driver_schedule_id" int
 );
 
 -- ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");
@@ -82,13 +82,15 @@ ALTER TABLE "group_requests" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("
 
 ALTER TABLE "user_daily_schedules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
+ALTER TABLE "user_daily_schedules" ADD CONSTRAINT "unique_user_id_day" UNIQUE("user_id", "day");
+
 -- ALTER TABLE "user_schedules" ADD FOREIGN KEY ("group_id") REFERENCES "groups" ("id");
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_id") REFERENCES "users" ("id");
 
 ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("carpooler_id") REFERENCES "users" ("id");
 
-ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_daily_schedules" ("id");
+ALTER TABLE "driver_carpool_schedules" ADD FOREIGN KEY ("driver_schedule_id") REFERENCES "user_daily_schedules" ("id");
 
 -- COMMENT ON COLUMN "users"."type" IS 'driver or carpooler';
 

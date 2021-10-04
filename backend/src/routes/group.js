@@ -8,9 +8,7 @@ const auth = require('../middleware/auth')
 /* CREATE GROUP -- TESTS DONE */
 router.post('/create', auth, (req, res) => {
   const { groupName, description, privacy } = req.body
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const adminId = decoded.id
+  const adminId = req.userId
 
   if (!groupName) {
     return res.status(400).send({ error: 'Please provide a group name.' })
@@ -65,9 +63,7 @@ router.post('/create', auth, (req, res) => {
 
 /* REASSIGN ADMIN ROLE -- TESTS DONE */
 router.patch('/admin', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const { userId } = req.body
 
   // Group ids of current admin and reassignee have to match
@@ -103,9 +99,7 @@ router.patch('/admin', auth, (req, res) => {
 
 /* GET A USER'S GROUP -- TESTS DONE */
 router.get('/me', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
 
   pool.query(`SELECT * FROM groups WHERE id IN (
     SELECT group_id FROM users WHERE id=$1)`, [id], (err, results) => {
@@ -113,6 +107,9 @@ router.get('/me', auth, (req, res) => {
       return res.status(500).send({ error: err })
     }
 
+    if (results.rows.length === 0) {
+      return res.status(400).send({ error: 'No group(s) exist for this user.' })
+    }
     return res.status(200).send({ success: 'Successfully retrieved user\'s group(s).', group: results.rows[0] })
   })
 })
@@ -128,6 +125,7 @@ router.get('/get-group', auth, (req, res) => {
   pool.query(`SELECT id, group_id_suffix, group_name, description, privacy
     FROM groups WHERE id=$1`, [groupId], (err, results) => {
     if (err) {
+      console.log('database error')
       return res.status(500).send({ error: err })
     }
 
@@ -163,9 +161,7 @@ router.get('/search', auth, (req, res) => {
 
 /* REQUEST TO JOIN GROUP -- TESTS DONE */
 router.post('/join-request', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const groupId = req.body.groupId
 
   pool.query('SELECT id, privacy FROM groups WHERE id=$1', [groupId], (err, results) => {
@@ -189,9 +185,7 @@ router.post('/join-request', auth, (req, res) => {
 
 /* JOIN GROUP VIA GROUP TOKEN -- TESTS DONE */
 router.patch('/join-token', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const { groupId, groupToken } = req.body
 
   // group id should match group token in groups table
@@ -217,9 +211,7 @@ router.patch('/join-token', auth, (req, res) => {
 
 /* GET ALL JOIN REQUESTS FOR A GROUP -- TESTS DONE */
 router.get('/requests', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const groupId = Number(req.query.group_id)
 
   pool.query('SELECT group_id FROM users WHERE id=$1', [id], (err, results) => {
@@ -252,9 +244,7 @@ router.get('/requests', auth, (req, res) => {
 
 /* CHECK IF A USER HAS A PENDING REQUEST FOR A GROUP -- DONE (NEEDS TESTS) */
 router.get('/myrequest', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const groupId = Number(req.query.group_id)
 
   pool.query('SELECT * FROM group_requests WHERE user_id=$1 AND group_id=$2', [id, groupId], (err, results) => {
@@ -265,7 +255,7 @@ router.get('/myrequest', auth, (req, res) => {
     const requests = results.rows
 
     if (requests.length === 0) {
-      return res.status(400).send({ error: 'Request does not exist.' })
+      return res.status(400).send({ error: 'User does not have a pending request to join this group.' })
     }
 
     return res.status(200).send({
@@ -277,9 +267,7 @@ router.get('/myrequest', auth, (req, res) => {
 
 /* ACCEPT GROUP JOIN REQUESTS -- TESTS DONE */
 router.post('/requests/accept', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const { userId, groupId } = req.body
 
   pool.query('SELECT group_id FROM users WHERE id=$1', [id], (err, results) => {
@@ -311,9 +299,7 @@ router.post('/requests/accept', auth, (req, res) => {
 
 /* DECLINE GROUP REQUESTS -- TESTS DONE */
 router.post('/requests/decline', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const { userId, groupId } = req.body
 
   pool.query('SELECT group_id FROM users WHERE id=$1', [id], (err, results) => {
@@ -338,9 +324,7 @@ router.post('/requests/decline', auth, (req, res) => {
 /* LEAVE GROUP -- TESTS DONE */
 // NOTE: What happens if admin leaves group?
 router.patch('/leave', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const { groupId } = req.body
 
   pool.query('SELECT id, admin FROM users WHERE id=$1', [id], (err, results) => {
@@ -368,9 +352,7 @@ router.patch('/leave', auth, (req, res) => {
 
 /* REMOVE FROM GROUP -- TESTS DONE */
 router.patch('/remove', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-  const id = decoded.id
+  const id = req.userId
   const removeId = req.body.userId
 
   // check that user is admin

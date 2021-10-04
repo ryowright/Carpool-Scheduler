@@ -3,19 +3,20 @@ import React, { useState, useContext, useLayoutEffect, useEffect } from "react";
 import { View,
         Text,
         Image,
+        Modal,
         TextInput,
         StyleSheet,
         Pressable,
-        Button,
         FlatList } from "react-native";
 import { Divider } from 'react-native-paper';
 import { UserContext } from '../../usercontext';
 import Icon from 'react-native-vector-icons/FontAwesome'
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function GroupDetail({navigation, route}) {
-    const [group, setGroup] = useState()
-    const [reqPending, setReqPending] = (false)
+export default function GroupDetail({ navigation, route }) {
+    const [group, setGroup] = useState(null)
+    const [reqPending, setReqPending] = useState(false)
+    const [modalVisible, setModalVisible] = useState(false)
 
     const {
         setIsAuth
@@ -39,17 +40,15 @@ export default function GroupDetail({navigation, route}) {
             .then((response) => response.json())
             .then(data => {
                 setGroup(data.group)
-                checkJoinRequests(token)
+                isReqPending(token)
             })
             .catch((error) => {
                 console.log(error)
-                // setIsAuth(false)
-                // AsyncStorage.removeItem('@session_key')
             })
         }
 
-        const checkJoinRequests = (token) => {
-            const URL = BASE_API_URL + `/group/requests?group_id=${route.params?.groupId}`
+        const isReqPending = (token) => {
+            const URL = BASE_API_URL + `/group/myrequest?group_id=${route.params?.groupId}`
             fetch(URL, {
                 method: 'GET',
                 headers: {
@@ -59,7 +58,7 @@ export default function GroupDetail({navigation, route}) {
             })
             .then((response) => response.json())
             .then(data => {
-                if (data.success) {
+                if (data.success && data.reqPending) {
                     setReqPending(true)
                 } else {
                     setReqPending(false)
@@ -71,11 +70,12 @@ export default function GroupDetail({navigation, route}) {
             })
         }
 
-        // renderGroup()
+        renderGroup()
     }, [])
 
-    const joinRequest = () => {
+    const sendJoinRequest = async () => {
         const URL = BASE_API_URL + '/group/join-request'
+        const token = await AsyncStorage.getItem('@session_token')
         fetch(URL, {
             method: 'POST',
             headers: {
@@ -96,16 +96,33 @@ export default function GroupDetail({navigation, route}) {
         .catch(error => console.log(error))
     }
 
+    const tokenModal = () => {
+        return (
+            <View>
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => {
+                      setModalVisible(!modalVisible)
+                    }}
+                >
+
+                </Modal>
+            </View>
+        )
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.titleContainer}>
                 <Image 
                     style={{backgroundColor: 'blue', width: 200, height: 200}}
                 />
-                <Text style={styles.title}>Group Name goes here.</Text>
+                <Text style={styles.title}>{ !group ? 'Group Name goes here.' : group.group_name }</Text>
             </View>
             <View style={styles.descriptionContainer}>
-                <Text style={styles.description}>Group Description goes here.</Text>
+                <Text style={styles.description}>{ !group ? 'Group Description goes here.' : group.description }</Text>
                 <View style={styles.btnContainer}>
                     <Pressable 
                         disabled={reqPending}
@@ -117,7 +134,7 @@ export default function GroupDetail({navigation, route}) {
                             },
                             styles.joinBtn
                         ]}
-                        onPress={() => joinRequest()}
+                        onPress={() => sendJoinRequest()}
                     >
                         <Text style={styles.joinBtnText}>{!reqPending ? "Request To Join" : "Request Pending"}</Text>
                     </Pressable>
@@ -131,17 +148,26 @@ export default function GroupDetail({navigation, route}) {
                             },
                             styles.joinBtn
                         ]}
-                        onPress={() => console.log('Join Via Token')}
+                        onPress={() => setModalVisible(true)}
                     >
                         <Text style={styles.joinBtnText}>Join with Token</Text>
                     </Pressable>
                 </View>
             </View>
-            {group ? 
-            <View>
-                <Text style={{top: 400, left: 200}}>{group.group_name}</Text>
+            <View style={styles.modalContainer}>
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => {
+                    setModalVisible(!modalVisible)
+                    }}
+                >
+                    <View style={styles.modalView}>
+                        <Text>Modal Text</Text>
+                    </View>
+                </Modal>
             </View>
-            : null}
         </View>
     )
 }
@@ -184,5 +210,19 @@ const styles = StyleSheet.create({
     },
     joinBtnText: {
         color: "white",
-    }
+    },
+    modalContainer: {
+        // flex: 1,
+        alignSelf: 'flex-end',
+        position: 'absolute',
+        bottom: 0
+    },
+    modalView: {
+        // bottom: 0,
+        backgroundColor: 'blue',
+        alignItems: "center",
+        justifyContent: "center",
+        height: '100%',
+        width: '100%'
+    },
 })

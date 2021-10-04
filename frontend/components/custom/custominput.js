@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView } from "react-native"
 
-export default CustomInput = (props) => {
+export default function CustomInput (props) {
     const [isTextFocused, setIsTextFocused] = useState(false)
     const textInputReference = useRef(null);
 

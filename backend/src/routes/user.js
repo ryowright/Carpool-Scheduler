@@ -181,18 +181,11 @@ router.post('/login', (req, res) => {
 
 /* USER LOGOUT */
 router.post('/logout', auth, (req, res) => {
-  const token = req.header('Authorization').replace('Bearer ', '') // works with postman
-  const decoded = jwt.verify(token, 'letscarpool')
-
-  // if (!req.valid) {
-  //     return
-  // }
-
-  if (!token) {
+  if (!req.token) {
     return res.status(401).send({ error: 'Invalid token.' })
   }
 
-  pool.query('DELETE FROM user_session_tokens WHERE user_id=$1 AND session_token=$2', [decoded.id, token], (err, results) => {
+  pool.query('DELETE FROM user_session_tokens WHERE user_id=$1 AND session_token=$2', [req.userId, req.token], (err, results) => {
     if (err) {
       return res.status(500).send({ error: err })
     }
@@ -306,6 +299,23 @@ router.post('/reset-password', async (req, res) => {
 
       return res.status(200).send({ success: 'Your password has been successfully reset.' })
     })
+  })
+})
+
+router.get('/me', auth, (req, res) => {
+  if (!req.token || !req.userId) {
+    return res.status(401).send({ error: 'User is unauthenticated.' })
+  }
+  
+  pool.query(`SELECT email, firstname, lastname, driver, carspace, school, group_id, admin
+  FROM users WHERE id=$1`, [req.userId], (err, results) => {
+    if (err) {
+      return res.status(500).send({ error: err })
+    }
+
+    const user = results.rows[0]
+
+    return res.status(200).send({ success: 'Successfully retrieved user info.', user })
   })
 })
 

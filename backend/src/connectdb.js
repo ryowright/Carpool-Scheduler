@@ -22,6 +22,7 @@ pool.connect(async function (err) {
   await pool.query('DELETE FROM users')
   await pool.query('DELETE FROM groups')
 
+  // comment queries out when testing
   // const hashedPassword = await bcrypt.hash('password', 8)
   // await pool.query(`INSERT INTO users(email, firstname, lastname, 
   // password, driver, carspace, school, is_verified) 

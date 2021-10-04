@@ -76,7 +76,7 @@ export default function SearchGroup({navigation}) {
         return (
             <View style={styles.groupListItemContainer}>
                 <Pressable
-                    onPress={() => {navigation.navigate('Group Detail', { groupId: item.id })}}
+                    onPress={() => navigation.navigate('Group Detail', { groupId: item.id })}
                     style={({ pressed }) => [
                         {
                             backgroundColor: pressed

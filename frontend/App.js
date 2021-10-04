@@ -1,6 +1,6 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BASE_API_URL } from '@env';
-import { StyleSheet, Button } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Login from './components/authentication/login'
 import Register from './components/authentication/register';
 import RegisterTwo from './components/authentication/registertwo';
@@ -24,7 +24,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const Stack = createNativeStackNavigator();
 
 const MyStack = (props) => {
-
   return (
     <NavigationContainer>
       <UserContext.Provider value={props.value}>
@@ -130,16 +129,16 @@ const MyStack = (props) => {
             ) : (
               <>
                 <Stack.Screen 
-                name="Group Home"
-                component={GroupHome}
-              />
-              <Stack.Screen 
-                name="Settings"
-                component={Settings}
-                options={{
-                  headerShown: true
-                }}
-              />
+                  name="Group Home"
+                  component={GroupHome}
+                />
+                <Stack.Screen 
+                  name="Settings"
+                  component={Settings}
+                  options={{
+                    headerShown: true
+                  }}
+                />
               </>
             )
           )}
@@ -159,7 +158,7 @@ export default function App() {
   const [userId, setUserId] = useState("")
   const [resetToken, setResetToken] = useState("")
   const [isAuth, setIsAuth] = useState(false)
-  const [groupId, setGroupId] = useState(null)
+  const [groupId, setGroupId] = useState("")
 
   const value = {
     firstName,
@@ -196,8 +195,34 @@ export default function App() {
       })
       .then(response => response.json())
       .then(data => {
-        setGroupId(data.group.id)
-        console.log(data)
+        if (data.success) {
+          setGroupId(data.group.id)
+        }
+      })
+      .catch(error => {
+        console.log(error)
+      })
+    }
+
+    const getUser = (token) => {
+      const URL = BASE_API_URL + '/user/me'
+      fetch(URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log({ user: data.user })
+          setIsAuth(true)
+          getMyGroup(token)
+        } else {
+          setIsAuth(false)
+          console.log(data.error)
+        }
       })
       .catch(error => {
         console.log(error)
@@ -209,12 +234,11 @@ export default function App() {
       if (!token) {
         setIsAuth(false)
       } else {
-        setIsAuth(true)
-        getMyGroup(token)
+        getUser(token)
       }
     }
     checkAuth()
-  }, [])
+  }, [isAuth, groupId])
 
   return (
     <MyStack value={value} />

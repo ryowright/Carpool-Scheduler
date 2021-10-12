@@ -16,6 +16,9 @@ import CreateGroup from './components/core/creategroup';
 import GroupHome from './components/core/grouphome';
 import CreateGroupTwo from './components/core/creategrouptwo';
 import GroupDetail from './components/core/groupdetail';
+import CreateSchedule from './components/core/createschedule';
+import DriverTo from './components/core/driverto';
+import DriverFrom from './components/core/driverfrom';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { UserContext } from './usercontext';
@@ -137,6 +140,26 @@ const MyStack = (props) => {
                   component={Settings}
                   options={{
                     headerShown: true
+                  }}
+                />
+                <Stack.Screen 
+                  name="Create Schedule"
+                  component={CreateSchedule}
+                />
+                <Stack.Screen 
+                  name="Driver To"
+                  component={DriverTo}
+                  options={{
+                    headerShown: true,
+                    title: 'Select Driver to Campus'
+                  }}
+                />
+                <Stack.Screen 
+                  name="Driver From"
+                  component={DriverFrom}
+                  options={{
+                    headerShown: true,
+                    title: 'Select Driver From Campus'
                   }}
                 />
               </>

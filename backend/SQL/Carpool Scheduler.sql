@@ -63,9 +63,11 @@ CREATE TABLE "user_daily_schedules" (
 
 CREATE TABLE "driver_carpool_schedules" (
   "id" SERIAL PRIMARY KEY,
-  "driver_id" int,
-  "carpooler_id" int,
-  "driver_schedule_id" int
+  "driver_id" int NOT NULL,
+  "carpooler_id" int NOT NULL,
+  "driver_schedule_id" int NOT NULL,
+  "to_campus" boolean NOT NULL,
+  "day" varchar NOT NULL
 );
 
 -- ALTER TABLE "users" ADD FOREIGN KEY ("schedule_id") REFERENCES "user_schedules" ("id");

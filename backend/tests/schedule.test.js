@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken')
 const request = require('supertest')
 const pool = require('../src/connectdb')
 const app = require('../src/app')
@@ -85,11 +84,11 @@ const driverSchedule = {
 /* ----------------------------- */
 
 beforeAll(async () => {
+  await pool.query('DELETE FROM driver_carpool_schedules')
+  await pool.query('DELETE FROM user_daily_schedules')
   await pool.query('DELETE FROM group_requests')
   await pool.query('DELETE FROM password_change_requests')
   await pool.query('DELETE FROM user_session_tokens')
-  await pool.query('DELETE FROM user_daily_schedules')
-  await pool.query('DELETE FROM driver_carpool_schedules')
   await pool.query('DELETE FROM users')
   await pool.query('DELETE FROM groups')
 })
@@ -128,32 +127,32 @@ beforeEach(async () => {
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
     [secondUser.email, secondUser.firstname, secondUser.lastname, hashedPassword, secondUser.driver, secondUser.school,
       secondUser.isVerified, resultsOne.rows[0].id, secondUser.carspace], (err, resultsFour) => {
-        if (err) {
-          throw new Error(err)
-        }
-
-        // driver schedule
-        pool.query(`INSERT INTO user_daily_schedules(user_id, day, flexibility_early, flexibility_late, to_campus, from_campus)
-        VALUES ($1, $2, $3, $4, $5, $6)`, [resultsFour.rows[0].id, driverSchedule.day, driverSchedule.flexibilityEarly,
-        driverSchedule.flexibilityLate, driverSchedule.toCampus.toLocaleTimeString(), driverSchedule.fromCampus.toLocaleTimeString()])      
+      if (err) {
+        throw new Error(err)
       }
+
+      // driver schedule
+      pool.query(`INSERT INTO user_daily_schedules(user_id, day, flexibility_early, flexibility_late, to_campus, from_campus)
+        VALUES ($1, $2, $3, $4, $5, $6)`, [resultsFour.rows[0].id, driverSchedule.day, driverSchedule.flexibilityEarly,
+        driverSchedule.flexibilityLate, driverSchedule.toCampus.toLocaleTimeString(), driverSchedule.fromCampus.toLocaleTimeString()])
+    }
     )
   })
 })
 
 afterEach(async () => {
+  await pool.query('DELETE FROM driver_carpool_schedules')
+  await pool.query('DELETE FROM user_daily_schedules')
   await pool.query('DELETE FROM group_requests')
   await pool.query('DELETE FROM password_change_requests')
   await pool.query('DELETE FROM user_session_tokens')
-  await pool.query('DELETE FROM user_daily_schedules')
-  await pool.query('DELETE FROM driver_carpool_schedules')
   await pool.query('DELETE FROM users')
   await pool.query('DELETE FROM groups')
 })
 
-// afterAll(() => {
-//   pool.end()
-// })
+afterAll(() => {
+  pool.end()
+})
 
 /* --- POSSIBLE INPUTS TO THIS API: --- */
 // day
@@ -261,10 +260,10 @@ describe('Testing User Individual Daily Schedule Retrieval', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + `/get-one?day=${scheduleTwo.day}`)
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(200)
-    expect(res.body.success).toBe(`Successfully retrieved user\'s schedule for ${scheduleTwo.day}`)
+    expect(res.body.success).toBe(`Successfully retrieved user's schedule for ${scheduleTwo.day}`)
     expect(res.body.schedule).toEqual({
       id: expect.any(Number),
       user_id: expect.any(Number),
@@ -280,7 +279,7 @@ describe('Testing User Individual Daily Schedule Retrieval', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + '/get-one?day=invalidday')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Value for query field \'day\' is invalid or missing.')
@@ -290,7 +289,7 @@ describe('Testing User Individual Daily Schedule Retrieval', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + '/get-one?day=')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Value for query field \'day\' is invalid or missing.')
@@ -298,7 +297,7 @@ describe('Testing User Individual Daily Schedule Retrieval', () => {
 
   test('Should fail -- User is not authenticated', async () => {
     const res = await request(app).get(path + `/get-one?day=${schedule.day}`)
-    .set({ Authorization: 'Bearer invalidtoken' })
+      .set({ Authorization: 'Bearer invalidtoken' })
 
     expect(res.status).toBe(401)
     expect(res.body.error).toBe('Invalid token.')
@@ -311,7 +310,7 @@ describe('Testing User All Schedule Retrieval', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + '/get-all')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe('Successfully retrieved all of user\'s daily schedules.')
@@ -330,7 +329,7 @@ describe('Testing User All Schedule Retrieval', () => {
 
   test('Should fail -- User is not authenticated', async () => {
     const res = await request(app).get(path + '/get-all')
-    .set({ Authorization: 'Bearer invalidtoken' })
+      .set({ Authorization: 'Bearer invalidtoken' })
 
     expect(res.status).toBe(401)
     expect(res.body.error).toBe('Invalid token.')
@@ -343,11 +342,11 @@ describe('Testing User Daily Schedule Updating', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).patch(path + '/update-one')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
-    .send({ ...scheduleTwo })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({ ...scheduleTwo })
 
     expect(res.status).toBe(200)
-    expect(res.body.success).toBe(`Successfully updated user\'s daily schedule for ${scheduleTwo.day}`)
+    expect(res.body.success).toBe(`Successfully updated user's daily schedule for ${scheduleTwo.day}`)
     expect(res.body.schedule).toEqual({
       id: expect.any(Number),
       user_id: expect.any(Number),
@@ -363,8 +362,8 @@ describe('Testing User Daily Schedule Updating', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).patch(path + '/update-one')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
-    .send({ ...scheduleTwo, day: 'invalidday'})
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({ ...scheduleTwo, day: 'invalidday' })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Value for query field \'day\' is invalid.')
@@ -385,8 +384,8 @@ describe('Testing User Daily Schedule Updating', () => {
     fromCampusTime.setSeconds(0)
 
     const res = await request(app).patch(path + '/update-one')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
-    .send({ ...scheduleTwo, toCampus: toCampusTime, fromCampus: fromCampusTime })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({ ...scheduleTwo, toCampus: toCampusTime, fromCampus: fromCampusTime })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('to_campus time should not be later than from_campus time.')
@@ -396,8 +395,8 @@ describe('Testing User Daily Schedule Updating', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).patch(path + '/update-one')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
-    .send({ ...scheduleTwo, flexibilityEarly: 190 })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({ ...scheduleTwo, flexibilityEarly: 190 })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Flexibility time(s) should not be greater than 3 hours.')
@@ -405,8 +404,8 @@ describe('Testing User Daily Schedule Updating', () => {
 
   test('Should fail -- User is not authenticated', async () => {
     const res = await request(app).patch(path + '/update-one')
-    .set({ Authorization: 'Bearer invalidtoken' })
-    .send({ ...scheduleTwo })
+      .set({ Authorization: 'Bearer invalidtoken' })
+      .send({ ...scheduleTwo })
 
     expect(res.status).toBe(401)
     expect(res.body.error).toBe('Invalid token.')
@@ -419,22 +418,22 @@ describe('Testing User Daily Schedule Removal', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const getRes = await request(app).get(path + `/get-one?day=${scheduleTwo.day}`)
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     const res = await request(app).delete(path + '/remove-one')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
-    .send({ scheduleId: getRes.body.schedule.id })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({ scheduleId: getRes.body.schedule.id })
 
     expect(res.status).toBe(200)
-    expect(res.body.success).toBe(`Successfully deleted user\'s daily schedule for ${scheduleTwo.day}`)
+    expect(res.body.success).toBe(`Successfully deleted user's daily schedule for ${scheduleTwo.day}`)
   })
 
   test('Should fail -- Schedule does not exist', async () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).delete(path + '/remove-one')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
-    .send({ scheduleId: -1 })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({ scheduleId: -1 })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Daily schedule does not exist.')
@@ -442,8 +441,8 @@ describe('Testing User Daily Schedule Removal', () => {
 
   test('Should fail -- User is not authenticated', async () => {
     const res = await request(app).delete(path + '/remove-one')
-    .set({ Authorization: `Bearer invalidtoken` })
-    .send({ scheduleId: -1 })
+      .set({ Authorization: 'Bearer invalidtoken' })
+      .send({ scheduleId: -1 })
 
     expect(res.status).toBe(401)
     expect(res.body.error).toBe('Invalid token.')
@@ -458,7 +457,7 @@ describe('Testing matching carpooler with driver -- To campus', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(`Successfully found matches for going to campus on ${carpoolerSchedule.day}.`)
@@ -479,7 +478,7 @@ describe('Testing matching carpooler with driver -- To campus', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + `/match-to-campus?day=${days[4]}`)
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(404)
     expect(res.body.error).toBe(`No driver matches found for going to campus on ${days[4]}`)
@@ -489,17 +488,25 @@ describe('Testing matching carpooler with driver -- To campus', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + '/match-to-campus?day=invalidday')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Day is invalid or missing.')
   })
 
-  test.todo('Should fail -- User is not a carpooler')
+  test('Should fail -- User is not a carpooler', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...secondUser })
+
+    const res = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('User is not a carpooler. Only carpoolers are allowed to match with drivers.')
+  })
 
   test('Should fail -- User is not authenticated', async () => {
     const res = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
-    .set({ Authorization: 'Bearer invalidtoken' })
+      .set({ Authorization: 'Bearer invalidtoken' })
 
     expect(res.status).toBe(401)
     expect(res.body.error).toBe('Invalid token.')
@@ -511,7 +518,7 @@ describe('Testing matching carpooler with driver -- From campus', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + `/match-from-campus?day=${carpoolerSchedule.day}`)
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(`Successfully found matches for going from campus on ${carpoolerSchedule.day}.`)
@@ -533,7 +540,7 @@ describe('Testing matching carpooler with driver -- From campus', () => {
     const day = 'Friday'
 
     const res = await request(app).get(path + `/match-from-campus?day=${day}`)
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(404)
     expect(res.body.error).toBe(`No driver matches found for going from campus on ${day}`)
@@ -543,34 +550,169 @@ describe('Testing matching carpooler with driver -- From campus', () => {
     const loginRes = await request(app).post(loginPath).send({ ...user })
 
     const res = await request(app).get(path + '/match-from-campus?day=invalidday')
-    .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
 
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('Day is invalid or missing.')
   })
 
-  test.todo('Should fail -- User is not a carpooler')
+  test('Should fail -- User is not a carpooler', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...secondUser })
+
+    const res = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('User is not a carpooler. Only carpoolers are allowed to match with drivers.')
+  })
 
   test('Should fail -- User is not authenticated', async () => {
     const res = await request(app).get(path + `/match-from-campus?day=${carpoolerSchedule.day}`)
-    .set({ Authorization: 'Bearer invalidtoken' })
+      .set({ Authorization: 'Bearer invalidtoken' })
 
     expect(res.status).toBe(401)
     expect(res.body.error).toBe('Invalid token.')
   })
 })
 
-
 // INPUTS: user_id, driver_id, driver_schedule_id
 describe('Testing driver selection to campus', () => {
-  test.todo('Successfully choose a driver to campus')
-  test.todo('Should fail -- driver does not exist')
-  test.todo('Should fail -- User is not authenticated')
+  test('Successfully choose a driver to campus', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-to-campus')
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({
+        driverId: matchRes.body.drivers[0].user_id,
+        driverScheduleId: matchRes.body.drivers[0].id,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(`Successfully set driver to campus for ${matchRes.body.drivers[0].day}`)
+  })
+
+  test('Should fail -- driver does not exist', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-to-campus')
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({
+        driverId: -1,
+        driverScheduleId: matchRes.body.drivers[0].id,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('Driver with id: -1 does not exist.')
+  })
+
+  test('Should fail -- driver schedule does not exist', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-to-campus')
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({
+        driverId: matchRes.body.drivers[0].user_id,
+        driverScheduleId: -1,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('Driver schedule with scheduleId: -1 does not exist.')
+  })
+
+  test('Should fail -- User is not authenticated', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-to-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-to-campus')
+      .set({ Authorization: 'Bearer invalidtoken' })
+      .send({
+        driverId: matchRes.body.drivers[0].user_id,
+        driverScheduleId: matchRes.body.drivers[0].id,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('Invalid token.')
+  })
 })
 
 // INPUTS: user_id, driver_id, driver_schedule_id
 describe('Testing driver selection from campus', () => {
-  test.todo('Successfully choose a driver from campus')
-  test.todo('Should fail -- driver does not exist')
-  test.todo('Should fail -- User is not authenticated')
+  test('Successfully choose a driver from campus', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-from-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-from-campus')
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({
+        driverId: matchRes.body.drivers[0].user_id,
+        driverScheduleId: matchRes.body.drivers[0].id,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(`Successfully set driver from campus for ${matchRes.body.drivers[0].day}`)
+  })
+
+  test('Should fail -- driver does not exist', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-from-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-from-campus')
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({
+        driverId: -1,
+        driverScheduleId: matchRes.body.drivers[0].id,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('Driver with id: -1 does not exist.')
+  })
+
+  test('Should fail -- driver schedule does not exist', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-from-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-from-campus')
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+      .send({
+        driverId: matchRes.body.drivers[0].user_id,
+        driverScheduleId: -1,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('Driver schedule with scheduleId: -1 does not exist.')
+  })
+
+  test('Should fail -- User is not authenticated', async () => {
+    const loginRes = await request(app).post(loginPath).send({ ...user })
+    const matchRes = await request(app).get(path + `/match-from-campus?day=${carpoolerSchedule.day}`)
+      .set({ Authorization: `Bearer ${loginRes.body.token}` })
+
+    const res = await request(app).post(path + '/driver-from-campus')
+      .set({ Authorization: 'Bearer invalidtoken' })
+      .send({
+        driverId: matchRes.body.drivers[0].user_id,
+        driverScheduleId: matchRes.body.drivers[0].id,
+        day: matchRes.body.drivers[0].day
+      })
+
+    expect(res.status).toBe(401)
+    expect(res.body.error).toBe('Invalid token.')
+  })
 })

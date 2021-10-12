@@ -1,5 +1,5 @@
 import { BASE_API_URL } from '@env';
-import React, { useState, useContext, useLayoutEffect, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { View,
         Text,
         FlatList,
@@ -11,7 +11,42 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function GroupHome({ navigation, route }) { 
     const [token, setToken] = useState(null)
-    const [schedules, setSchedules] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
+    const [schedules, setSchedules] = useState([
+        {
+            day: 'Monday',
+            toCampus: null,
+            driverTo: null,
+            fromCampus: null,
+            driverFrom: null
+        },
+        {
+            day: 'Tuesday',
+            toCampus: null,
+            driverTo: null,
+            fromCampus: null,
+            driverFrom: null
+        },
+        {
+            day: 'Wednesday',
+            toCampus: null,
+            driverTo: null,
+            fromCampus: null,
+            driverFrom: null
+        },
+        {
+            day: 'Thursday',
+            toCampus: null,
+            driverTo: null,
+            fromCampus: null,
+            driverFrom: null
+        },
+        {
+            day: 'Friday',
+            toCampus: null,
+            driverTo: null,
+            fromCampus: null,
+            driverFrom: null
+        }])
     
 
     useEffect(() => {
@@ -22,11 +57,11 @@ export default function GroupHome({ navigation, route }) {
                 return setIsAuth(false)
             }
             setToken(tok)
-            // fetchMySchedule(tok)
+            fetchMatchedSchedules(tok)
         }
 
-        const fetchMySchedule = (token) => {
-            const URL = BASE_API_URL + '/schedule/me'
+        const fetchMatchedSchedules = (token) => {
+            const URL = BASE_API_URL + '/schedule/matched-schedules'
             fetch(URL, {
                 method: 'GET',
                 headers: {
@@ -40,7 +75,9 @@ export default function GroupHome({ navigation, route }) {
                     console.log(data.error)
                 } else {
                     console.log(data)
-                    // setSchedules(data.schedules)
+                    if (data.schedules) {
+                        setSchedules(data.schedules)
+                    }
                 }
             })
             .catch(error => {
@@ -54,7 +91,7 @@ export default function GroupHome({ navigation, route }) {
         return (
             <View style={styles.itemContainer}>
                 <Pressable
-                    onPress={() => console.log(item)}
+                    onPress={() => navigation.navigate('Create Schedule', { day: item?.day })}
                     style={({ pressed }) => [
                         {
                             backgroundColor: pressed
@@ -65,12 +102,13 @@ export default function GroupHome({ navigation, route }) {
                 >
                     <View style={styles.item}>
                         <View>
-                            <Text style={{ fontSize: 16 }}>{item}</Text>
+                            <Text style={{ fontSize: 16 }}>{item?.day}</Text>
                         </View>
                         <View>
-                            <Text>To campus: </Text>
-                            <Text>From campus: </Text>
-                            <Text>Driver: </Text>
+                            <Text>To campus: {item?.toCampus}</Text>
+                            <Text>Driver: {item?.driverTo}</Text>
+                            <Text>From campus: {item?.fromCampus}</Text>
+                            <Text>Driver: {item?.driverFrom}</Text>
                         </View>
                     </View>
                 </Pressable>
@@ -98,14 +136,14 @@ export default function GroupHome({ navigation, route }) {
                 />
             </View>
             <View style={styles.headingContainer}>
-                <Text style={styles.heading}>Group Name</Text>
+                <Text style={styles.heading}>{route.params?.groupName ? route.params?.groupName : 'Group Name'}</Text>
             </View>
             <View style={styles.schedulesContainer}>
                 <Divider />
                 <FlatList 
                     data={schedules}
                     renderItem={renderItem}
-                    keyExtractor={day => day}
+                    // keyExtractor={item => item.day}
                 />
             </View>
         </View>

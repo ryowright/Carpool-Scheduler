@@ -16,9 +16,11 @@ pool.connect(async function (err) {
     }
   })
   // Inserting sample user for development
+  await pool.query('DELETE FROM driver_carpool_schedules')
+  await pool.query('DELETE FROM user_daily_schedules')
+  await pool.query('DELETE FROM group_requests')
   await pool.query('DELETE FROM password_change_requests')
   await pool.query('DELETE FROM user_session_tokens')
-  await pool.query('DELETE FROM user_daily_schedules')
   await pool.query('DELETE FROM users')
   await pool.query('DELETE FROM groups')
 

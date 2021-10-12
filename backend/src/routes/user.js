@@ -306,7 +306,7 @@ router.get('/me', auth, (req, res) => {
   if (!req.token || !req.userId) {
     return res.status(401).send({ error: 'User is unauthenticated.' })
   }
-  
+
   pool.query(`SELECT email, firstname, lastname, driver, carspace, school, group_id, admin
   FROM users WHERE id=$1`, [req.userId], (err, results) => {
     if (err) {

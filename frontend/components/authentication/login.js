@@ -50,6 +50,7 @@ export default function Login({ navigation }) {
 
     const login = () => {
         const URL = BASE_API_URL + '/user/login'
+        console.log(URL)
         fetch(URL, {
         method: 'POST',
         headers: {

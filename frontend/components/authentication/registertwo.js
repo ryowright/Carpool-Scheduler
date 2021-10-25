@@ -22,65 +22,68 @@ export default function RegisterTwo ({ navigation }) {
       style={styles.container}
     >
       <KeyboardAvoidingView
-        style={styles.registrationForm}
         behavior="padding"
       >
-        <Text
-          style={styles.title}
-        >
-          Carpool Scheduler
-        </Text>
-        <CustomInput
-          inputTitle="Password"
-          onChangeText={setPassword}
-          value={password}
-          secureTextEntry={true}
-        />
-        <CustomInput
-          inputTitle="Confirm Password"
-          onChangeText={setConfirmPass}
-          value={confirmPass}
-          secureTextEntry={true}
-        />
-        <CustomInput
-          inputTitle="School or University"
-          onChangeText={setSchool}
-          value={school}
-        />
-        {!message
-          ? null
-          : <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
-        }
-        <View style={styles.loginContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              if (password !== confirmPass) {
-                console.log({ password, confirmPass })
-                setError(true)
-                setMessage('Your passwords do not match.')
-              } else {
-                setError(false)
-                setMessage('')
-                navigation.navigate('Registration Three')
-              }
-            }}
-            style={styles.loginBtn}
-          >
-            <Text style={styles.loginText}>
-              Next
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.titleView}>
           <Text
-            style={{ color: '#9aa0a6' }}
+            style={styles.title}
           >
-            Already Have an Account?
-            <Text
-              style={styles.forgotPasswordLink}
-              onPress={() => navigation.navigate('Login')}
-            >
-              {' Sign In'}
-            </Text>
+            Register
           </Text>
+        </View>
+        <View style={styles.registrationForm}>
+          <CustomInput
+            inputTitle="Password"
+            onChangeText={setPassword}
+            value={password}
+            secureTextEntry={true}
+          />
+          <CustomInput
+            inputTitle="Confirm Password"
+            onChangeText={setConfirmPass}
+            value={confirmPass}
+            secureTextEntry={true}
+          />
+          <CustomInput
+            inputTitle="School or University"
+            onChangeText={setSchool}
+            value={school}
+          />
+          {!message
+            ? null
+            : <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
+          }
+          <View style={styles.loginContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                if (password !== confirmPass) {
+                  console.log({ password, confirmPass })
+                  setError(true)
+                  setMessage('Your passwords do not match.')
+                } else {
+                  setError(false)
+                  setMessage('')
+                  navigation.navigate('Registration Three')
+                }
+              }}
+              style={styles.loginBtn}
+            >
+              <Text style={styles.loginText}>
+                Next
+              </Text>
+            </TouchableOpacity>
+            <Text
+              style={{ color: '#9aa0a6' }}
+            >
+              Already Have an Account?
+              <Text
+                style={styles.forgotPasswordLink}
+                onPress={() => navigation.navigate('Login')}
+              >
+                {' Sign In'}
+              </Text>
+            </Text>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -94,14 +97,19 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center'
   },
-  registrationForm: {
+  titleView: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    bottom: '10%'
   },
   title: {
     fontSize: 40,
     marginBottom: 10
+  },
+  registrationForm: {
+    flex: 1.5,
+    alignItems: 'center'
   },
   input: {
     width: 270,

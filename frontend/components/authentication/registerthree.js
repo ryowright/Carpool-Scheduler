@@ -71,7 +71,7 @@ export default function RegisterThree ({ navigation }) {
         <Text
           style={styles.title}
         >
-          Carpool Scheduler
+          Register
         </Text>
         <View style={styles.pickerContainer}>
           <Picker
@@ -139,7 +139,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 40
-    // marginBottom: 10
   },
   input: {
     width: 270,

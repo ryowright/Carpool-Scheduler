@@ -74,12 +74,13 @@ export default function DriverTo ({ navigation, route }) {
               backgroundColor: pressed
                 ? '#c9c9c9'
                 : 'white'
-            }
+            },
+            styles.item
           ]}
         >
-          <View style={styles.item}>
-            <Text>Driver: {item.driverTo}</Text>
-            <Text>To Campus: {item.toCampus}</Text>
+          <View style={styles.itemTextContainer}>
+            <Text>Driver: {item.firstname + ' ' + item.lastname}</Text>
+            <Text>To Campus: {item.to_campus}</Text>
           </View>
         </Pressable>
         <Divider />
@@ -107,12 +108,19 @@ export default function DriverTo ({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: {
-
+    flex: 1,
+    width: '100%',
+    height: '100%'
   },
   itemContainer: {
-
+    
   },
   item: {
+    height: 80,
+    paddingLeft: 25,
+    justifyContent: 'center'
+  },
+  itemTextContainer: {
 
   }
 })

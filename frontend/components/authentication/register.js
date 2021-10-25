@@ -19,50 +19,53 @@ export default function Register ({ navigation }) {
       style={styles.container}
     >
       <KeyboardAvoidingView
-        style={styles.registrationForm}
         behavior="padding"
       >
-        <Text
-          style={styles.title}
-        >
-          Carpool Scheduler
-        </Text>
-        <CustomInput
-          inputTitle="First Name"
-          onChangeText={setFirstName}
-          value={firstName}
-        />
-        <CustomInput
-          inputTitle="Last Name"
-          onChangeText={setLastName}
-          value={lastName}
-        />
-        <CustomInput
-          inputTitle="Email"
-          onChangeText={setEmail}
-          value={email}
-          keyboardType="email-address"
-        />
-        <View style={styles.loginContainer}>
-          <TouchableOpacity
-            onPress={() => { navigation.navigate('Registration Two') }}
-            style={styles.loginBtn}
-          >
-            <Text style={styles.loginText}>
-              Next
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.titleView}>
           <Text
-            style={{ color: '#9aa0a6' }}
+            style={styles.title}
           >
-            Already Have an Account?
-            <Text
-              style={styles.forgotPasswordLink}
-              onPress={() => navigation.navigate('Login')}
-            >
-              {' Sign In'}
-            </Text>
+            Register
           </Text>
+        </View>
+        <View style={styles.registrationForm}>
+          <CustomInput
+            inputTitle="First Name"
+            onChangeText={setFirstName}
+            value={firstName}
+          />
+          <CustomInput
+            inputTitle="Last Name"
+            onChangeText={setLastName}
+            value={lastName}
+          />
+          <CustomInput
+            inputTitle="Email"
+            onChangeText={setEmail}
+            value={email}
+            keyboardType="email-address"
+          />
+          <View style={styles.loginContainer}>
+            <TouchableOpacity
+              onPress={() => { navigation.navigate('Registration Two') }}
+              style={styles.loginBtn}
+            >
+              <Text style={styles.loginText}>
+                Next
+              </Text>
+            </TouchableOpacity>
+            <Text
+              style={{ color: '#9aa0a6' }}
+            >
+              Already Have an Account?
+              <Text
+                style={styles.forgotPasswordLink}
+                onPress={() => navigation.navigate('Login')}
+              >
+                {' Sign In'}
+              </Text>
+            </Text>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -76,14 +79,19 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center'
   },
-  registrationForm: {
+  titleView: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    bottom: '10%'
   },
   title: {
     fontSize: 40,
     marginBottom: 10
+  },
+  registrationForm: {
+    flex: 1.5,
+    alignItems: 'center'
   },
   input: {
     width: 270,

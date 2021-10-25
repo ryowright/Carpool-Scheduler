@@ -50,34 +50,40 @@ export default function ResetPassword ({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView style={styles.inputForm}>
-        <Text style={styles.title}>
-          Carpool Scheduler
-        </Text>
-        <CustomInput
-          inputTitle="New Password"
-          onChangeText={setPassword}
-          value={password}
-          secureTextEntry={true}
-        />
-        <CustomInput
-          inputTitle="Confirm Password"
-          onChangeText={setConfPass}
-          value={confPass}
-          secureTextEntry={true}
-        />
-        {!message
-          ? null
-          : <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
-        }
-        <TouchableOpacity
-          onPress={() => resetPassword()}
-          style={styles.forgotBtn}
-        >
-          <Text style={styles.forgotText}>
-            Confirm New Password
+      <KeyboardAvoidingView
+        behavior='padding'
+      >
+        <View style={styles.titleView}>
+          <Text style={styles.title}>
+            Reset Password
           </Text>
-        </TouchableOpacity>
+        </View>
+        <View style={styles.inputForm}>
+          <CustomInput
+            inputTitle="New Password"
+            onChangeText={setPassword}
+            value={password}
+            secureTextEntry={true}
+          />
+          <CustomInput
+            inputTitle="Confirm Password"
+            onChangeText={setConfPass}
+            value={confPass}
+            secureTextEntry={true}
+          />
+          {!message
+            ? null
+            : <Text style={{ color: error ? 'red' : 'green' }}>{message}</Text>
+          }
+          <TouchableOpacity
+            onPress={() => resetPassword()}
+            style={styles.forgotBtn}
+          >
+            <Text style={styles.forgotText}>
+              Confirm
+            </Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </View>
   )
@@ -90,14 +96,19 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center'
   },
-  inputForm: {
+  titleView: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    bottom: '10%'
   },
   title: {
     fontSize: 40,
     marginBottom: 10
+  },
+  inputForm: {
+    flex: 1,
+    alignItems: 'center'
   },
   input: {
     width: 270,

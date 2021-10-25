@@ -20,6 +20,7 @@ import CreateSchedule from './components/core/createschedule'
 import DriverTo from './components/core/driverto'
 import DriverFrom from './components/core/driverfrom'
 import Notifications from './components/core/Notifications'
+import LoadingScreen from './components/custom/loadingscreen'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { UserContext } from './usercontext'
@@ -192,6 +193,8 @@ export default function App () {
   const [resetToken, setResetToken] = useState('')
   const [isAuth, setIsAuth] = useState(false)
   const [groupId, setGroupId] = useState('')
+  const [isDriver, setIsDriver] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const value = {
     firstName,
@@ -204,6 +207,8 @@ export default function App () {
     resetToken,
     isAuth,
     groupId,
+    isDriver,
+    isLoading,
     setFirstName,
     setLastName,
     setEmail,
@@ -213,7 +218,9 @@ export default function App () {
     setUserId,
     setResetToken,
     setIsAuth,
-    setGroupId
+    setGroupId,
+    setIsDriver,
+    setIsLoading
   }
 
   useEffect(() => {
@@ -251,6 +258,7 @@ export default function App () {
           if (data.success) {
             console.log({ user: data.user })
             setIsAuth(true)
+            setIsDriver(data.user.driver)
             getMyGroup(token)
           } else {
             setIsAuth(false)
@@ -274,6 +282,8 @@ export default function App () {
   }, [isAuth, groupId])
 
   return (
+    isLoading ?
+    <LoadingScreen /> :
     <MyStack value={value} />
   )
 }

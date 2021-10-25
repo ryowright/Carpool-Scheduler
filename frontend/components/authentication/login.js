@@ -16,7 +16,8 @@ export default function Login ({ navigation }) {
 
   const {
     setEmail,
-    setIsAuth
+    setIsAuth,
+    setIsLoading
   } = useContext(UserContext)
 
   useEffect(() => {
@@ -51,13 +52,47 @@ export default function Login ({ navigation }) {
 
   const login = () => {
     const URL = BASE_API_URL + '/user/login'
-    console.log(URL)
+    setIsLoading(true)
     fetch(URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ email: loginEmail, password })
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data)
+        if (data.error) {
+          if (data.isVerified === false) {
+            setVerifiedError(true)
+          }
+          setMessage(data.error)
+          setError(true)
+          setIsAuth(false)
+          setIsLoading(false)
+        } else if (data.success) {
+          setMessage(data.success)
+          setError(false)
+          AsyncStorage.setItem('@session_token', data.token)
+          setIsAuth(true)
+          setIsLoading(false)
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+        setIsLoading(false)
+      })
+  }
+
+  const loginTestUser = () => {
+    const URL = BASE_API_URL + '/user/login'
+    fetch(URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email: 'test@test.com', password: 'password' })
     })
       .then(response => response.json())
       .then(data => {
@@ -155,6 +190,12 @@ export default function Login ({ navigation }) {
                 {' Sign Up'}
               </Text>
             </Text>
+            <Text
+              style={styles.link}
+              onPress={loginTestUser}
+            >
+              Login as Test User
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -175,8 +216,13 @@ const styles = StyleSheet.create({
   },
   loginForm: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center'
+  },
+  titleView: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+    bottom: '10%'
   },
   title: {
     fontSize: 40,
@@ -204,9 +250,5 @@ const styles = StyleSheet.create({
   },
   titleIcon: {
     // padding: 50
-  },
-  titleView: {
-    margin: 0,
-    padding: 0
   }
 })

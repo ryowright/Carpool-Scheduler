@@ -1,4 +1,5 @@
 import { BASE_API_URL } from '@env'
+import moment from 'moment'
 import React, { useState, useEffect, useContext } from 'react'
 import PropTypes from 'prop-types'
 import {
@@ -51,8 +52,46 @@ export default function GroupHome ({ navigation }) {
       driverFrom: null
     }])
 
+  const [driverSchedules, setDriverSchedules] = useState([
+    {
+      day: 'Monday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      day: 'Tuesday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      day: 'Wednesday',
+      PassengersTo: null,
+      driverTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      day: 'Thursday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      day: 'Friday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    }])
+
   const {
-    setIsAuth
+    setIsAuth,
+    isDriver
   } = useContext(UserContext)
 
   useEffect(() => {
@@ -62,8 +101,12 @@ export default function GroupHome ({ navigation }) {
         console.log('no session token')
         return setIsAuth(false)
       }
-      fetchMatchedSchedules(tok)
       getMyGroup(tok)
+      if (!isDriver) {
+        fetchMatchedSchedules(tok)
+      } else {
+        fetchMatchedDriverSchedules(tok)
+      }
     }
 
     const fetchMatchedSchedules = (token) => {
@@ -80,16 +123,79 @@ export default function GroupHome ({ navigation }) {
           if (data.error) {
             console.log(data.error)
           } else {
-            console.log(data)
             if (data.schedules) {
-              setSchedules(data.schedules)
+              const dataSchedules = data.schedules
+              dataSchedules.forEach((schedule, idx) => {
+                if (schedule.toCampus && schedule.fromCampus) {
+                  const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
+                  const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
+
+                  dataSchedules[idx] = {...dataSchedules[idx], toCampus, fromCampus}
+                }
+              })
+              setSchedules(dataSchedules)
             }
           }
         })
         .catch(error => {
           console.log(error)
         })
-    }
+    , [schedules]}
+
+    const fetchMatchedDriverSchedules = (token) => {
+      const URL = BASE_API_URL + '/schedule/matched-schedules-driver'
+      fetch(URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      }).then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.log(data.error)
+        } else {
+          if (data.schedules) {
+            console.log(data.schedules)
+            const dataSchedules = []
+            for (let schedule of data.schedules) {
+              const dataSchedule = {
+                ...schedule
+              }
+              if (schedule.toCampus && schedule.fromCampus) {
+                const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
+                const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
+                let passengersTo = ''
+                let passengersFrom = ''
+
+                for (let idx in schedule.passengersTo) {
+                  if (idx != schedule.passengersTo.length - 1) {
+                    passengersTo += schedule.passengersTo[idx] + ', '
+                  } else {
+                    passengersTo += schedule.passengersTo[idx]
+                  }
+                }
+
+                for (let idx in schedule.passengersFrom) {
+                  if (idx != schedule.passengersFrom.length - 1) {
+                    passengersFrom += schedule.passengersFrom[idx] + ', '
+                  } else {
+                    passengersFrom += schedule.passengersFrom[idx]
+                  }
+                }
+
+                dataSchedule.toCampus = toCampus
+                dataSchedule.fromCampus = fromCampus
+                dataSchedule.passengersTo = passengersTo
+                dataSchedule.passengersFrom = passengersFrom
+              }
+              dataSchedules.push(dataSchedule)
+            }
+            setDriverSchedules(dataSchedules)
+          }
+        }
+      })
+    , [driverSchedules]}
 
     const getMyGroup = (token) => {
       const URL = BASE_API_URL + '/group/me'
@@ -116,7 +222,7 @@ export default function GroupHome ({ navigation }) {
     auth()
   }, [])
 
-  const renderItem = ({ item }) => {
+  const renderCarpoolerItem = ({ item }) => {
     return (
       <View style={styles.itemContainer}>
         <Pressable
@@ -138,6 +244,36 @@ export default function GroupHome ({ navigation }) {
               <Text>Driver: {item?.driverTo}</Text>
               <Text>From campus: {item?.fromCampus}</Text>
               <Text>Driver: {item?.driverFrom}</Text>
+            </View>
+          </View>
+        </Pressable>
+        <Divider />
+      </View>
+    )
+  }
+
+  const renderDriverItem = ({ item }) => {
+    return (
+      <View style={styles.itemContainer}>
+        <Pressable
+          onPress={() => navigation.navigate('Create Schedule', { day: item?.day })}
+          style={({ pressed }) => [
+            {
+              backgroundColor: pressed
+                ? '#c9c9c9'
+                : 'white'
+            }
+          ]}
+        >
+          <View style={styles.item}>
+            <View>
+              <Text style={{ fontSize: 16 }}>{item?.day}</Text>
+            </View>
+            <View>
+              <Text>To campus: {item?.toCampus}</Text>
+              <Text>Passengers: {item?.passengersTo}</Text>
+              <Text>From campus: {item?.fromCampus}</Text>
+              <Text>Passengers: {item?.passengersFrom}</Text>
             </View>
           </View>
         </Pressable>
@@ -170,8 +306,8 @@ export default function GroupHome ({ navigation }) {
       <View style={styles.schedulesContainer}>
         <Divider />
         <FlatList
-          data={schedules}
-          renderItem={renderItem}
+          data={!isDriver ? schedules : driverSchedules}
+          renderItem={!isDriver ? renderCarpoolerItem : renderDriverItem}
           // keyExtractor={item => item.day}
         />
       </View>

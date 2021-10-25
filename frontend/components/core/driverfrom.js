@@ -29,6 +29,7 @@ export default function DriverFrom ({ navigation, route }) {
         .then(data => {
           if (data.success) {
             setDrivers(data.drivers)
+            console.log({drivers: data.drivers})
           } else {
             console.log(data.error)
           }
@@ -74,12 +75,13 @@ export default function DriverFrom ({ navigation, route }) {
               backgroundColor: pressed
                 ? '#c9c9c9'
                 : 'white'
-            }
+            },
+            styles.item
           ]}
         >
-          <View style={styles.item}>
-            <Text>Driver: {item.driverFrom}</Text>
-            <Text>From Campus: {item.fromCampus}</Text>
+          <View style={styles.itemTextContainer}>
+            <Text>Driver: {item.firstname + ' ' + item.lastname}</Text>
+            <Text>From Campus: {item.from_campus}</Text>
           </View>
         </Pressable>
         <Divider />
@@ -107,12 +109,19 @@ export default function DriverFrom ({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: {
-
+    flex: 1,
+    width: '100%',
+    height: '100%'
   },
   itemContainer: {
-
+    
   },
   item: {
+    height: 80,
+    paddingLeft: 25,
+    justifyContent: 'center'
+  },
+  itemTextContainer: {
 
   }
 })

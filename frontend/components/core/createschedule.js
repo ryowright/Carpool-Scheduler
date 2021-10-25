@@ -1,5 +1,5 @@
 import { BASE_API_URL } from '@env'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import PropTypes from 'prop-types'
 import {
   View,
@@ -11,6 +11,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import CustomInput from '../custom/custominput'
+import { UserContext } from '../../usercontext'
 
 export default function CreateSchedule ({ navigation, route }) {
   const [scheduleExists, setScheduleExists] = useState(false)
@@ -18,6 +19,10 @@ export default function CreateSchedule ({ navigation, route }) {
   const [fromCampus, setFromCampus] = useState(new Date())
   const [flexTo, setFlexTo] = useState(0)
   const [flexFrom, setFlexFrom] = useState(0)
+
+  const {
+    isDriver
+  } = useContext(UserContext)
 
   const onChangeTo = (event, selectedDate) => {
     const currentDate = selectedDate || toCampus
@@ -31,17 +36,11 @@ export default function CreateSchedule ({ navigation, route }) {
 
   useEffect(() => {
     const getSchedule = async () => {
-
+      // Fill out form details from user's last visit
     }
   }, [])
 
   const createSchedule = async () => {
-    console.log({
-      toCampus: toCampus.toLocaleTimeString(),
-      fromCampus: fromCampus.toLocaleTimeString(),
-      flexTo,
-      flexFrom
-    })
     const URL = BASE_API_URL + '/schedule/create'
     const token = await AsyncStorage.getItem('@session_token')
     fetch(URL, {
@@ -61,7 +60,11 @@ export default function CreateSchedule ({ navigation, route }) {
       .then(response => response.json())
       .then(data => {
         console.log(data)
-        navigation.navigate('Driver To', { day: route.params?.day })
+        if (!isDriver) {
+          navigation.navigate('Driver To', { day: route.params?.day })
+        } else {
+          navigation.navigate('Group Home')
+        }
       })
       .catch(error => {
         console.log(error)
@@ -96,6 +99,8 @@ export default function CreateSchedule ({ navigation, route }) {
             value={flexTo}
             keyboardType="numeric"
             maxLength={3}
+            editable={!isDriver}
+            selectTextOnFocus={!isDriver}
           />
         </View>
 
@@ -116,6 +121,8 @@ export default function CreateSchedule ({ navigation, route }) {
             value={flexFrom}
             keyboardType="numeric"
             maxLength={3}
+            editable={!isDriver}
+            selectTextOnFocus={!isDriver}
           />
         </View>
 

@@ -91,6 +91,7 @@ router.get('/get-all', auth, (req, res) => {
 })
 
 /* UPDATE A SCHEDULE FOR A GIVEN DAY -- NEEDS TO BE COMPLETED, NEEDS TO RETURN DRIVERS */
+// NEEDS ADDITIONAL FIX -- MAKE SURE TO DELETE CORRESPONDING driver_carpool_schedule UPON UPDATE
 router.patch('/update-one', auth, (req, res) => {
   const { day, flexibilityEarly, flexibilityLate, toCampus, fromCampus } = req.body
 
@@ -115,14 +116,31 @@ router.patch('/update-one', auth, (req, res) => {
     return res.status(400).send({ error: 'Flexibility time(s) should not be greater than 3 hours.' })
   }
 
-  pool.query(`UPDATE user_daily_schedules SET flexibility_early=$1, flexibility_late=$2, to_campus=$3, from_campus=$4
-  WHERE user_id=$5 AND day=$6 RETURNING user_daily_schedules.*`, [flexibilityEarly, flexibilityLate, toCampusTime.toLocaleTimeString(),
-    fromCampusTime.toLocaleTimeString(), req.userId, day], (err, results) => {
+  pool.query(`SELECT driver FROM users WHERE id=$1`, [req.userId], (err, resultsOne) => {
     if (err) {
       return res.status(500).send({ error: err })
     }
 
-    return res.status(200).send({ success: `Successfully updated user's daily schedule for ${day}`, schedule: results.rows[0] })
+    if (resultsOne.rows[0].driver === true && (!!flexibilityEarly || !!flexibilityEarly)) {
+      return res.status(400).send({ error: 'Drivers cannot set flexibility times.' })
+    }
+
+    pool.query(`UPDATE user_daily_schedules SET flexibility_early=$1, flexibility_late=$2, to_campus=$3, from_campus=$4
+      WHERE user_id=$5 AND day=$6 RETURNING user_daily_schedules.*`, [flexibilityEarly, flexibilityLate, toCampusTime.toLocaleTimeString(),
+      fromCampusTime.toLocaleTimeString(), req.userId, day], (err, results) => {
+      if (err) {
+        return res.status(500).send({ error: err })
+      }
+
+      // DELETE MATCHED SCHEDULES FOR SPECIFIC DAY
+      if (resultsOne.rows[0].driver === true) {
+        pool.query(`DELETE FROM driver_carpool_schedules WHERE day=$1 AND driver_id=$2`, [day, req.userId])
+      } else {
+        pool.query(`DELETE FROM driver_carpool_schedules WHERE day=$1 AND carpooler_id=$2`, [day, req.userId])
+      }
+
+      return res.status(200).send({ success: `Successfully updated user's daily schedule for ${day}`, schedule: results.rows[0] })
+    })
   })
 })
 
@@ -156,14 +174,19 @@ router.get('/match-to-campus', auth, (req, res) => {
       return res.status(500).send({ error: err })
     }
 
+    if (resultsFive.rows.length === 0) {
+      return res.status(404).send({ error: 'User not found.' })
+    }
+
     if (resultsFive.rows[0].driver === true) {
       return res.status(400).send({ error: 'User is not a carpooler. Only carpoolers are allowed to match with drivers.' })
     }
 
     // Gets all driver schedules for requested day
     // where count of driver_carpooler_schedule ids <= driver carspace
-    pool.query(`SELECT * FROM user_daily_schedules WHERE user_id!=$1 AND day=$2 AND user_id IN (
-      SELECT id FROM users WHERE driver=$3)`, [req.userId, day, true], (err, results) => {
+    pool.query(`SELECT usd.id, usd.user_id, usd.day, usd.to_campus, firstname, lastname FROM user_daily_schedules AS usd, users WHERE user_id!=$1
+      AND day=$2 AND (user_id, firstname) IN (SELECT id, firstname FROM users WHERE driver=$3)`, 
+      [req.userId, day, true], (err, results) => {
       if (err) {
         return res.status(500).send({ error: err })
       }
@@ -199,28 +222,35 @@ router.get('/match-to-campus', auth, (req, res) => {
         })
 
         pool.query(`SELECT COUNT(*), driver_schedule_id, driver_id, carspace FROM driver_carpool_schedules 
-            INNER JOIN users ON users.id=driver_id GROUP BY driver_schedule_id, driver_id, carspace`,
-        [], (err, resultsThree) => {
+          INNER JOIN users ON users.id=driver_id WHERE to_campus=$1 GROUP BY driver_schedule_id, driver_id, carspace`,
+        [true], (err, resultsThree) => {
           if (err) {
             console.error(err)
           }
 
-          // Means that there are no paired drivers and carpoolers yet
+          // Means that there are no paired drivers and carpoolers yet -- all drivers have available carspace
           // send filteredDrivers as drivers in res.body
           if (resultsThree.rows.length === 0) {
             return res.status(200).send({ success: `Successfully found matches for going to campus on ${day}.`, drivers: filteredDriversSchedules })
           }
 
-          // Filter out all drivers with no carspace left
+          // Get all drivers with no carspace left to filter out later
           const carspaceFiltered = resultsThree.rows.filter(row => {
-            return row.count < row.carspace
+            return row.count >= row.carspace
+          })
+
+          const carspaceIdsToFilter = []
+          carspaceFiltered.forEach(row => {
+            carspaceIdsToFilter.push(row.driver_schedule_id)
           })
 
           // FINAL COMPATIBLE LIST OF DRIVER SCHEDULE IDS
-          const finalScheduleIds = carspaceFiltered.filter(row => filteredDriversScheduleIds.includes(row.driver_schedule_id))
+          const finalScheduleIds = filteredDriversSchedules.filter(row => !carspaceIdsToFilter.includes(row.driver_schedule_id))
+
           const finalSchedules = []
           filteredDriversSchedules.forEach(schedule => {
             if (finalScheduleIds.includes(schedule.id)) {
+              console.log({finalSchedules})
               finalSchedules.push(schedule)
             }
           })
@@ -254,8 +284,9 @@ router.get('/match-from-campus', auth, (req, res) => {
 
     // Gets all driver schedules for requested day
     // where count of driver_carpooler_schedule ids <= driver carspace
-    pool.query(`SELECT * FROM user_daily_schedules WHERE user_id!=$1 AND day=$2 AND user_id IN (
-      SELECT id FROM users WHERE driver=$3)`, [req.userId, day, true], (err, results) => {
+    pool.query(`SELECT usd.id, usd.user_id, usd.day, usd.from_campus, firstname, lastname FROM user_daily_schedules AS usd, users WHERE user_id!=$1
+      AND day=$2 AND (user_id, firstname) IN (SELECT id, firstname FROM users WHERE driver=$3)`,
+      [req.userId, day, true], (err, results) => {
       if (err) {
         return res.status(500).send({ error: err })
       }
@@ -291,31 +322,39 @@ router.get('/match-from-campus', auth, (req, res) => {
         })
 
         pool.query(`SELECT COUNT(*), driver_schedule_id, driver_id, carspace FROM driver_carpool_schedules 
-            INNER JOIN users ON users.id=driver_id GROUP BY driver_schedule_id, driver_id, carspace`,
-        [], (err, resultsThree) => {
+          INNER JOIN users ON users.id=driver_id WHERE to_campus=$1 GROUP BY driver_schedule_id, driver_id, carspace`,
+        [false], (err, resultsThree) => {
           if (err) {
             console.error(err)
           }
 
-          // Means that there are no paired drivers and carpoolers yet
+          // Means that there are no paired drivers and carpoolers yet -- all drivers have available carspace
           // send filteredDrivers as drivers in res.body
           if (resultsThree.rows.length === 0) {
             return res.status(200).send({ success: `Successfully found matches for going from campus on ${day}.`, drivers: filteredDriversSchedules })
           }
 
-          // Filter out all drivers with no carspace left
+          // Get all drivers with no carspace left to filter out later
           const carspaceFiltered = resultsThree.rows.filter(row => {
-            return row.count < row.carspace
+            return row.count >= row.carspace
+          })
+
+          const carspaceIdsToFilter = []
+          carspaceFiltered.forEach(row => {
+            carspaceIdsToFilter.push(row.driver_schedule_id)
           })
 
           // FINAL COMPATIBLE LIST OF DRIVER SCHEDULE IDS
-          const finalScheduleIds = carspaceFiltered.filter(row => filteredDriversScheduleIds.includes(row.driver_schedule_id))
+          const finalScheduleIds = filteredDriversSchedules.filter(row => !carspaceIdsToFilter.includes(row.driver_schedule_id))
+
           const finalSchedules = []
           filteredDriversSchedules.forEach(schedule => {
             if (finalScheduleIds.includes(schedule.id)) {
+              console.log({finalSchedules})
               finalSchedules.push(schedule)
             }
           })
+          
           return res.status(200).send({ success: `Successfully found matches for going from campus on ${day}.`, drivers: finalSchedules })
         })
       })
@@ -395,14 +434,16 @@ router.post('/driver-from-campus', auth, (req, res) => {
   })
 })
 
-/* GET MATCHED SCHEDULES */
+/* GET MATCHED SCHEDULES -- FOR CARPOOLERS*/
+// DOUBLE CHECK THIS -- *EDITED RECENTLY
 router.get('/matched-schedules', auth, (req, res) => {
-  pool.query(`SELECT dcs.day, uds.to_campus, uds1.from_campus, u.firstname || ' ' || u.lastname AS driver_to, u1.firstname || ' ' || u1.lastname AS driver_from
+  pool.query(`SELECT uds.day AS day, uds.to_campus AS to_campus, uds1.from_campus AS from_campus, u.firstname || ' ' || u.lastname AS driver_to, u1.firstname || ' ' || u1.lastname AS driver_from
     FROM driver_carpool_schedules AS dcs, driver_carpool_schedules AS dcs1, user_daily_schedules AS uds, user_daily_schedules AS uds1, users AS u, users AS u1
     WHERE dcs.carpooler_id=$1 AND dcs.to_campus=$2 AND dcs.driver_schedule_id=uds.id AND uds.user_id=u.id AND dcs1.carpooler_id=$3 AND dcs1.to_campus=$4 AND
     dcs1.driver_schedule_id=uds1.id AND uds1.user_id=u1.id LIMIT 5`, 
     [req.userId, true, req.userId, false], (err, results) => {
     if (err) {
+      console.log('error')
       return res.status(500).send({ error: err })
     }
 
@@ -454,6 +495,80 @@ router.get('/matched-schedules', auth, (req, res) => {
 
     return res.status(200).send({ success: 'Successfully retrieved matched schedules.', schedules })
   })
+})
+
+/* GET MATCHED SCHEDULES -- FOR DRIVERS */
+// RETURN DAYS, TO AND FROM TIMES, AND CARPOOLER NAMES/IDS
+router.get('/matched-schedules-driver', auth, (req, res) => {
+  // COMPLETE THIS
+  // GET ALL PASSENGERS CARPOOLING TO CAMPUS
+  
+  const schedules = []
+  for (let day of days) {
+    const driverDailySchedule = {
+      day,
+      toCampus: '',
+      passengersTo: [],
+      fromCampus: '',
+      passengersFrom: []
+    }
+
+    // GETS ALL PASSENGERS CARPOOLING TO CAMPUS FOR A GIVEN DAY
+    pool.query(`SELECT dcs.day AS day, uds.to_campus AS to_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_to
+    FROM driver_carpool_schedules AS dcs, user_daily_schedules AS uds, users AS u
+    WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2
+    `, [req.userId, day], (err, results) => {
+      if (err) {
+        return res.status(500).send({ error: err })
+      }
+
+      console.log(results.rows)
+      if (results.rows.length > 0) {
+        driverDailySchedule.toCampus = results.rows[0].to_campus
+        results.rows.forEach(row => driverDailySchedule.passengersTo.push(row.carpooler_to))
+      }
+
+      // GET ALL PASSENGERS CARPOOLING FROM CAMPUS FOR A GIVEN DAY
+      pool.query(`SELECT dcs.day AS day, uds.from_campus AS from_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_from
+      FROM driver_carpool_schedules AS dcs, driver_carpool_schedules AS dcs1, user_daily_schedules AS uds, users AS u
+      WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2
+      `, [req.userId, day], (err, resultsOne) => {
+        if (err) {
+          return res.status(500).send({ error: err })
+        }
+
+        if (resultsOne.rows.length > 0) {
+          driverDailySchedule.fromCampus = resultsOne.rows[0].from_campus
+          resultsOne.rows.forEach(row => {
+            console.log('pushing to driverDailySchedule')
+            driverDailySchedule.passengersTo.push(row.carpooler_from)
+          })
+        }
+
+        schedules.push(driverDailySchedule)
+
+        // RETURNING AFTER ITERATING THROUGH ALL DAYS
+        console.log({driverDailySchedule})
+        if (day === 'Friday') {
+          return res.status(200).send({ success: 'Successfully retrieved matched schedules for driver.', schedules })
+        }
+      })
+    })
+  }
+
+  // RETURNED SCHEDULES FORMAT
+  /*
+    schedules = [
+      {
+        day: 'Monday'
+        toCampus: '10:00:00'
+        passengersTo: [passenger1, passenger2, passenger3]
+        fromCampus: '16:15:00'
+        passengersFrom: [passenger4, passenger5, passenger6]
+      },
+      ...
+    ]
+  */
 })
 
 module.exports = router

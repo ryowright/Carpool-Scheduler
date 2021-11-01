@@ -498,11 +498,9 @@ router.get('/matched-schedules', auth, (req, res) => {
 })
 
 /* GET MATCHED SCHEDULES -- FOR DRIVERS */
+// GET ALL PASSENGERS CARPOOLING TO AND FROM CAMPUS
 // RETURN DAYS, TO AND FROM TIMES, AND CARPOOLER NAMES/IDS
 router.get('/matched-schedules-driver', auth, (req, res) => {
-  // COMPLETE THIS
-  // GET ALL PASSENGERS CARPOOLING TO CAMPUS
-  
   const schedules = []
   for (let day of days) {
     const driverDailySchedule = {
@@ -516,8 +514,8 @@ router.get('/matched-schedules-driver', auth, (req, res) => {
     // GETS ALL PASSENGERS CARPOOLING TO CAMPUS FOR A GIVEN DAY
     pool.query(`SELECT dcs.day AS day, uds.to_campus AS to_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_to
     FROM driver_carpool_schedules AS dcs, user_daily_schedules AS uds, users AS u
-    WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2
-    `, [req.userId, day], (err, results) => {
+    WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2 AND dcs.to_campus=$3
+    `, [req.userId, day, true], (err, results) => {
       if (err) {
         return res.status(500).send({ error: err })
       }
@@ -530,9 +528,9 @@ router.get('/matched-schedules-driver', auth, (req, res) => {
 
       // GET ALL PASSENGERS CARPOOLING FROM CAMPUS FOR A GIVEN DAY
       pool.query(`SELECT dcs.day AS day, uds.from_campus AS from_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_from
-      FROM driver_carpool_schedules AS dcs, driver_carpool_schedules AS dcs1, user_daily_schedules AS uds, users AS u
-      WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2
-      `, [req.userId, day], (err, resultsOne) => {
+      FROM driver_carpool_schedules AS dcs, user_daily_schedules AS uds, users AS u
+      WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2 AND dcs.to_campus=$3
+      `, [req.userId, day, false], (err, resultsOne) => {
         if (err) {
           return res.status(500).send({ error: err })
         }
@@ -540,8 +538,7 @@ router.get('/matched-schedules-driver', auth, (req, res) => {
         if (resultsOne.rows.length > 0) {
           driverDailySchedule.fromCampus = resultsOne.rows[0].from_campus
           resultsOne.rows.forEach(row => {
-            console.log('pushing to driverDailySchedule')
-            driverDailySchedule.passengersTo.push(row.carpooler_from)
+            driverDailySchedule.passengersFrom.push(row.carpooler_from)
           })
         }
 

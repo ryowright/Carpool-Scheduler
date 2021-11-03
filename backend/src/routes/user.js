@@ -144,7 +144,7 @@ router.post('/login', (req, res) => {
 
   // 3. Return a jwt for session authentication if successful
 
-  pool.query('SELECT id, password, is_verified FROM users WHERE email=$1', [email], async (err, results) => {
+  pool.query('SELECT firstname, lastname, id, password, is_verified, group_id, admin FROM users WHERE email=$1', [email], async (err, results) => {
     if (err) {
       return res.status(500).send({ error: err })
     }
@@ -167,12 +167,17 @@ router.post('/login', (req, res) => {
       }
       const token = jwt.sign({ id: userId.toString() }, 'letscarpool', { expiresIn: '1 day' })
       pool.query('INSERT INTO user_session_tokens(user_id, session_token) VALUES ($1, $2)',
-        [userId, token], (err, results) => {
+        [userId, token], (err, resultsOne) => {
           if (err) {
             return res.status(500).send({ error: err })
           }
 
-          return res.status(object.status).send({ success: object.message, token })
+          return res.status(object.status).send({ success: object.message, token,
+                                                  firstname: results.rows[0].firstname,
+                                                  lastname: results.rows[0].lastname,
+                                                  groupId: results.rows[0].group_id,
+                                                  admin: results.rows[0].admin
+          })
         }
       )
     }

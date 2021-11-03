@@ -1,5 +1,6 @@
 import { BASE_API_URL } from '@env'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
+import moment from 'moment'
 import PropTypes from 'prop-types'
 import {
   View,
@@ -10,9 +11,14 @@ import {
 } from 'react-native'
 import { Divider } from 'react-native-paper'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { UserContext } from '../../usercontext'
 
 export default function DriverTo ({ navigation, route }) {
   const [drivers, setDrivers] = useState(null)
+
+  const {
+    setScheduleHasUpdate
+  } = useContext(UserContext)
 
   useEffect(() => {
     const matchToCampus = async () => {
@@ -28,6 +34,10 @@ export default function DriverTo ({ navigation, route }) {
         .then(response => response.json())
         .then(data => {
           if (data.success) {
+            data.drivers.forEach(driver => {
+              const toCampus = moment(driver.to_campus, 'HH:mm').format('hh:mm A')
+              driver.to_campus = toCampus
+            })
             setDrivers(data.drivers)
           } else {
             console.log(data.error)
@@ -62,6 +72,7 @@ export default function DriverTo ({ navigation, route }) {
       .catch(error => {
         console.log(error)
       })
+      setScheduleHasUpdate(true)
   }
 
   const renderItem = ({ item }) => {
@@ -95,6 +106,7 @@ export default function DriverTo ({ navigation, route }) {
           <FlatList
             data={drivers}
             renderItem={renderItem}
+            keyExtractor={item => item.id.toString()}
           />
         </View>
       </View>

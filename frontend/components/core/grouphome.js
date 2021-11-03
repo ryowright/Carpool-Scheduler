@@ -15,82 +15,15 @@ import { UserContext } from '../../usercontext'
 
 export default function GroupHome ({ navigation }) {
   const [group, setGroup] = useState({})
-  const [schedules, setSchedules] = useState([
-    {
-      day: 'Monday',
-      toCampus: null,
-      driverTo: null,
-      fromCampus: null,
-      driverFrom: null
-    },
-    {
-      day: 'Tuesday',
-      toCampus: null,
-      driverTo: null,
-      fromCampus: null,
-      driverFrom: null
-    },
-    {
-      day: 'Wednesday',
-      toCampus: null,
-      driverTo: null,
-      fromCampus: null,
-      driverFrom: null
-    },
-    {
-      day: 'Thursday',
-      toCampus: null,
-      driverTo: null,
-      fromCampus: null,
-      driverFrom: null
-    },
-    {
-      day: 'Friday',
-      toCampus: null,
-      driverTo: null,
-      fromCampus: null,
-      driverFrom: null
-    }])
-
-  const [driverSchedules, setDriverSchedules] = useState([
-    {
-      day: 'Monday',
-      toCampus: null,
-      PassengersTo: null,
-      fromCampus: null,
-      PassengersFrom: null
-    },
-    {
-      day: 'Tuesday',
-      toCampus: null,
-      PassengersTo: null,
-      fromCampus: null,
-      PassengersFrom: null
-    },
-    {
-      day: 'Wednesday',
-      PassengersTo: null,
-      driverTo: null,
-      fromCampus: null,
-      PassengersFrom: null
-    },
-    {
-      day: 'Thursday',
-      toCampus: null,
-      PassengersTo: null,
-      fromCampus: null,
-      PassengersFrom: null
-    },
-    {
-      day: 'Friday',
-      toCampus: null,
-      PassengersTo: null,
-      fromCampus: null,
-      PassengersFrom: null
-    }])
 
   const {
     setIsAuth,
+    setSchedules,
+    schedules,
+    setDriverSchedules,
+    driverSchedules,
+    scheduleHasUpdate,
+    setScheduleHasUpdate,
     isDriver
   } = useContext(UserContext)
 
@@ -98,14 +31,15 @@ export default function GroupHome ({ navigation }) {
     const auth = async () => {
       const tok = await AsyncStorage.getItem('@session_token')
       if (!tok) {
-        console.log('no session token')
         return setIsAuth(false)
       }
       getMyGroup(tok)
-      if (!isDriver) {
+      if (!isDriver && scheduleHasUpdate) {
         fetchMatchedSchedules(tok)
+        setScheduleHasUpdate(false)
       } else {
         fetchMatchedDriverSchedules(tok)
+        setScheduleHasUpdate(false)
       }
     }
 
@@ -124,6 +58,7 @@ export default function GroupHome ({ navigation }) {
             console.log(data.error)
           } else {
             if (data.schedules) {
+              console.log(data.schedules)
               const dataSchedules = data.schedules
               dataSchedules.forEach((schedule, idx) => {
                 if (schedule.toCampus && schedule.fromCampus) {
@@ -140,7 +75,7 @@ export default function GroupHome ({ navigation }) {
         .catch(error => {
           console.log(error)
         })
-    , [schedules]}
+    }
 
     const fetchMatchedDriverSchedules = (token) => {
       const URL = BASE_API_URL + '/schedule/matched-schedules-driver'
@@ -195,7 +130,7 @@ export default function GroupHome ({ navigation }) {
           }
         }
       })
-    , [driverSchedules]}
+    }
 
     const getMyGroup = (token) => {
       const URL = BASE_API_URL + '/group/me'
@@ -211,7 +146,6 @@ export default function GroupHome ({ navigation }) {
           if (data.error) {
             console.log(data.error)
           } else {
-            console.log(data)
             setGroup(data.group)
           }
         })
@@ -220,7 +154,7 @@ export default function GroupHome ({ navigation }) {
         })
     }
     auth()
-  }, [])
+  }, [scheduleHasUpdate])
 
   const renderCarpoolerItem = ({ item }) => {
     return (
@@ -308,7 +242,7 @@ export default function GroupHome ({ navigation }) {
         <FlatList
           data={!isDriver ? schedules : driverSchedules}
           renderItem={!isDriver ? renderCarpoolerItem : renderDriverItem}
-          // keyExtractor={item => item.day}
+          keyExtractor={item => item.id.toString()}
         />
       </View>
     </View>

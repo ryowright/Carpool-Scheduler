@@ -17,8 +17,8 @@ export default function CreateSchedule ({ navigation, route }) {
   const [scheduleExists, setScheduleExists] = useState(false)
   const [toCampus, setToCampus] = useState(new Date())
   const [fromCampus, setFromCampus] = useState(new Date())
-  const [flexTo, setFlexTo] = useState(0)
-  const [flexFrom, setFlexFrom] = useState(0)
+  const [flexTo, setFlexTo] = useState(null)
+  const [flexFrom, setFlexFrom] = useState(null)
 
   const {
     isDriver
@@ -37,7 +37,30 @@ export default function CreateSchedule ({ navigation, route }) {
   useEffect(() => {
     const getSchedule = async () => {
       // Fill out form details from user's last visit
+      const URL = BASE_API_URL + `/schedule/get-one?day=${route.params?.day}`
+      const token = await AsyncStorage.getItem('@session_token')
+      fetch(URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          setScheduleExists(true)
+          setToCampus(data.schedule.to_campus)
+          setFromCampus(data.schedule.from_campus)
+          setFlexTo(data.schedule.flexibility_early)
+          setFlexFrom(data.schedule.flexibility_late)
+        }
+      })
+      .catch(error => {
+        console.log(error)
+      })
     }
+    getSchedule()
   }, [])
 
   const createSchedule = async () => {
@@ -53,13 +76,12 @@ export default function CreateSchedule ({ navigation, route }) {
         day: route.params?.day,
         toCampus,
         fromCampus,
-        flexibilityEarly: flexTo,
-        flexibilityLate: flexFrom
+        flexibilityEarly: Number(flexTo),
+        flexibilityLate: Number(flexFrom)
       })
     })
       .then(response => response.json())
       .then(data => {
-        console.log(data)
         if (!isDriver) {
           navigation.navigate('Driver To', { day: route.params?.day })
         } else {
@@ -69,6 +91,36 @@ export default function CreateSchedule ({ navigation, route }) {
       .catch(error => {
         console.log(error)
       })
+  }
+
+  const updateSchedule = async () => {
+    const URL = BASE_API_URL + '/schedule/update-one'
+    const token = await AsyncStorage.getItem('@session_token')
+    fetch(URL, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        day: route.params?.day,
+        toCampus,
+        fromCampus,
+        flexibilityEarly: Number(flexTo),
+        flexibilityLate: Number(flexFrom)
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (!isDriver) {
+        navigation.navigate('Driver To', { day: route.params?.day })
+      } else {
+        navigation.navigate('Group Home')
+      }
+    })
+    .catch(error => {
+      console.log(error)
+    })
   }
 
   return (
@@ -96,7 +148,7 @@ export default function CreateSchedule ({ navigation, route }) {
           <CustomInput
             inputTitle="Flexibilty - to campus"
             onChangeText={setFlexTo}
-            value={flexTo}
+            value={flexTo ? flexTo.toString() : ''}
             keyboardType="numeric"
             maxLength={3}
             editable={!isDriver}
@@ -118,7 +170,7 @@ export default function CreateSchedule ({ navigation, route }) {
           <CustomInput
             inputTitle="Flexibilty - from campus"
             onChangeText={setFlexFrom}
-            value={flexFrom}
+            value={flexFrom ? flexFrom.toString() : ''}
             keyboardType="numeric"
             maxLength={3}
             editable={!isDriver}
@@ -128,11 +180,11 @@ export default function CreateSchedule ({ navigation, route }) {
 
         <View style={styles.btnContainer}>
           <TouchableOpacity
-            onPress={() => createSchedule()}
+            onPress={() => {scheduleExists ? updateSchedule() : createSchedule()}}
             style={styles.createBtn}
           >
             <Text style={styles.createBtnText}>
-              Create Schedule
+              {scheduleExists ? 'Update Schedule' : 'Create Schedule'}
             </Text>
           </TouchableOpacity>
         </View>

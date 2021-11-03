@@ -17,7 +17,8 @@ export default function Login ({ navigation }) {
   const {
     setEmail,
     setIsAuth,
-    setIsLoading
+    setIsLoading,
+    setGroupId
   } = useContext(UserContext)
 
   useEffect(() => {
@@ -43,7 +44,6 @@ export default function Login ({ navigation }) {
           setMessage(data.success)
           setError(false)
         }
-        // console.log(data)
       })
       .catch((error) => {
         console.error('Error:', error)
@@ -70,23 +70,25 @@ export default function Login ({ navigation }) {
           setMessage(data.error)
           setError(true)
           setIsAuth(false)
-          setIsLoading(false)
         } else if (data.success) {
           setMessage(data.success)
           setError(false)
           AsyncStorage.setItem('@session_token', data.token)
           setIsAuth(true)
-          setIsLoading(false)
+          if (data.groupId) {
+            setGroupId(data.groupId)
+          }
         }
       })
       .catch((error) => {
         console.error('Error:', error)
-        setIsLoading(false)
       })
+      setIsLoading(false)
   }
 
   const loginTestUser = () => {
     const URL = BASE_API_URL + '/user/login'
+    setIsLoading(true)
     fetch(URL, {
       method: 'POST',
       headers: {
@@ -109,11 +111,16 @@ export default function Login ({ navigation }) {
           setError(false)
           AsyncStorage.setItem('@session_token', data.token)
           setIsAuth(true)
+          if (data.groupId) {
+            console.log('setting group id')
+            setGroupId(data.groupId)
+          }
         }
       })
       .catch((error) => {
         console.error('Error:', error)
       })
+      setIsLoading(false)
   }
 
   return (

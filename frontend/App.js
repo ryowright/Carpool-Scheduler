@@ -195,6 +195,91 @@ export default function App () {
   const [groupId, setGroupId] = useState('')
   const [isDriver, setIsDriver] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [scheduleHasUpdate, setScheduleHasUpdate] = useState(false)
+
+  const [schedules, setSchedules] = useState([
+    {
+      id: 1,
+      day: 'Monday',
+      toCampus: null,
+      driverTo: null,
+      fromCampus: null,
+      driverFrom: null
+    },
+    {
+      id: 2,
+      day: 'Tuesday',
+      toCampus: null,
+      driverTo: null,
+      fromCampus: null,
+      driverFrom: null
+    },
+    {
+      id: 3,
+      day: 'Wednesday',
+      toCampus: null,
+      driverTo: null,
+      fromCampus: null,
+      driverFrom: null
+    },
+    {
+      id: 4,
+      day: 'Thursday',
+      toCampus: null,
+      driverTo: null,
+      fromCampus: null,
+      driverFrom: null
+    },
+    {
+      id: 5,
+      day: 'Friday',
+      toCampus: null,
+      driverTo: null,
+      fromCampus: null,
+      driverFrom: null
+    }])
+
+  const [driverSchedules, setDriverSchedules] = useState([
+    {
+      id: 1,
+      day: 'Monday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      id: 2,
+      day: 'Tuesday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      id: 3,
+      day: 'Wednesday',
+      PassengersTo: null,
+      driverTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      id: 4,
+      day: 'Thursday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    },
+    {
+      id: 5,
+      day: 'Friday',
+      toCampus: null,
+      PassengersTo: null,
+      fromCampus: null,
+      PassengersFrom: null
+    }])
 
   const value = {
     firstName,
@@ -209,6 +294,9 @@ export default function App () {
     groupId,
     isDriver,
     isLoading,
+    schedules,
+    driverSchedules,
+    scheduleHasUpdate,
     setFirstName,
     setLastName,
     setEmail,
@@ -220,7 +308,10 @@ export default function App () {
     setIsAuth,
     setGroupId,
     setIsDriver,
-    setIsLoading
+    setIsLoading,
+    setSchedules,
+    setDriverSchedules,
+    setScheduleHasUpdate
   }
 
   useEffect(() => {

@@ -1,6 +1,8 @@
 import { BASE_API_URL } from '@env'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
+import moment from 'moment'
 import PropTypes from 'prop-types'
+import { UserContext } from '../../usercontext'
 import {
   View,
   Text,
@@ -14,6 +16,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 export default function DriverFrom ({ navigation, route }) {
   const [drivers, setDrivers] = useState(null)
 
+  const {
+    setScheduleHasUpdate
+  } = useContext(UserContext)
+  
   useEffect(() => {
     const matchFromCampus = async () => {
       const URL = BASE_API_URL + `/schedule/match-from-campus?day=${route.params?.day}`
@@ -28,8 +34,11 @@ export default function DriverFrom ({ navigation, route }) {
         .then(response => response.json())
         .then(data => {
           if (data.success) {
+            data.drivers.forEach(driver => {
+              const fromCampus = moment(driver.from_campus, 'HH:mm').format('hh:mm A')
+              driver.from_campus = fromCampus
+            })
             setDrivers(data.drivers)
-            console.log({drivers: data.drivers})
           } else {
             console.log(data.error)
           }
@@ -63,6 +72,7 @@ export default function DriverFrom ({ navigation, route }) {
       .catch(error => {
         console.log(error)
       })
+      setScheduleHasUpdate(true)
   }
 
   const renderItem = ({ item }) => {
@@ -96,6 +106,7 @@ export default function DriverFrom ({ navigation, route }) {
           <FlatList
             data={drivers}
             renderItem={renderItem}
+            keyExtractor={item => item.id.toString()}
           />
         </View>
       </View>

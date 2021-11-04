@@ -24,7 +24,9 @@ export default function GroupHome ({ navigation }) {
     driverSchedules,
     scheduleHasUpdate,
     setScheduleHasUpdate,
-    isDriver
+    isDriver,
+    defaultSchedules,
+    defaultDriverSchedules
   } = useContext(UserContext)
 
   useEffect(() => {
@@ -34,17 +36,17 @@ export default function GroupHome ({ navigation }) {
         return setIsAuth(false)
       }
       getMyGroup(tok)
+
       if (!isDriver && scheduleHasUpdate) {
         fetchMatchedSchedules(tok)
-        setScheduleHasUpdate(false)
-      } else {
+      } else if (isDriver) {
         fetchMatchedDriverSchedules(tok)
-        setScheduleHasUpdate(false)
       }
     }
 
     const fetchMatchedSchedules = (token) => {
       const URL = BASE_API_URL + '/schedule/matched-schedules'
+      setSchedules(defaultSchedules)
       fetch(URL, {
         method: 'GET',
         headers: {
@@ -58,7 +60,6 @@ export default function GroupHome ({ navigation }) {
             console.log(data.error)
           } else {
             if (data.schedules) {
-              console.log(data.schedules)
               const dataSchedules = data.schedules
               dataSchedules.forEach((schedule, idx) => {
                 if (schedule.toCampus && schedule.fromCampus) {
@@ -69,6 +70,7 @@ export default function GroupHome ({ navigation }) {
                 }
               })
               setSchedules(dataSchedules)
+              setScheduleHasUpdate(false)
             }
           }
         })
@@ -79,6 +81,7 @@ export default function GroupHome ({ navigation }) {
 
     const fetchMatchedDriverSchedules = (token) => {
       const URL = BASE_API_URL + '/schedule/matched-schedules-driver'
+      setSchedules(defaultDriverSchedules)
       fetch(URL, {
         method: 'GET',
         headers: {
@@ -91,15 +94,16 @@ export default function GroupHome ({ navigation }) {
           console.log(data.error)
         } else {
           if (data.schedules) {
-            console.log(data.schedules)
             const dataSchedules = []
-            for (let schedule of data.schedules) {
+            data.schedules.forEach(schedule => {
               const dataSchedule = {
                 ...schedule
               }
+              console.log(schedule.fromCampus)
               if (schedule.toCampus && schedule.fromCampus) {
                 const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
                 const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
+                console.log('test')
                 let passengersTo = ''
                 let passengersFrom = ''
 
@@ -125,8 +129,9 @@ export default function GroupHome ({ navigation }) {
                 dataSchedule.passengersFrom = passengersFrom
               }
               dataSchedules.push(dataSchedule)
-            }
+            })
             setDriverSchedules(dataSchedules)
+            setScheduleHasUpdate(false)
           }
         }
       })
@@ -154,7 +159,19 @@ export default function GroupHome ({ navigation }) {
         })
     }
     auth()
-  }, [scheduleHasUpdate])
+  }, [scheduleHasUpdate, setScheduleHasUpdate])
+
+  const sortDays = (a, b) => {
+    const daysidx = {
+      'Monday': 1,
+      'Tuesday': 2,
+      'Wednesday': 3,
+      'Thursday': 4,
+      'Friday': 5
+    }
+
+    return daysidx[a.day] - daysidx[b.day]
+  }
 
   const renderCarpoolerItem = ({ item }) => {
     return (
@@ -240,7 +257,7 @@ export default function GroupHome ({ navigation }) {
       <View style={styles.schedulesContainer}>
         <Divider />
         <FlatList
-          data={!isDriver ? schedules : driverSchedules}
+          data={!isDriver ? schedules.sort(sortDays) : driverSchedules.sort(sortDays)}
           renderItem={!isDriver ? renderCarpoolerItem : renderDriverItem}
           keyExtractor={item => item.id.toString()}
         />

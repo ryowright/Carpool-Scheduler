@@ -5,6 +5,13 @@ const pool = require('../connectdb')
 const auth = require('../middleware/auth')
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const daysidx = {
+  'Monday': 1,
+  'Tuesday': 2,
+  'Wednesday': 3,
+  'Thursday': 4,
+  'Friday': 5
+}
 
 /* CREATE A SCHEDULE FOR A GIVEN DAY */
 router.post('/create', auth, (req, res) => {
@@ -75,6 +82,10 @@ router.get('/get-one', auth, (req, res) => {
         return res.status(500).send({ error: err })
       }
 
+      if (results.rows.length === 0) {
+        return res.status(404).send({ error: `No schedule found for user on ${day}` })
+      }
+
       return res.status(200).send({ success: `Successfully retrieved user's schedule for ${day}`, schedule: results.rows[0] })
     })
 })
@@ -130,9 +141,18 @@ router.patch('/update-one', auth, (req, res) => {
         return res.status(500).send({ error: err })
       }
 
+      if (results.rows.length === 0) {
+        return res.status(404).send({ error: 'User schedule does not exist.' })
+      }
+
       // DELETE MATCHED SCHEDULES FOR SPECIFIC DAY
       if (resultsOne.rows[0].driver === true) {
-        pool.query(`DELETE FROM driver_carpool_schedules WHERE day=$1 AND driver_id=$2`, [day, req.userId])
+        pool.query(`DELETE FROM driver_carpool_schedules WHERE day=$1 AND driver_id=$2 RETURNING *`, [day, req.userId], (err, results) => {
+          if (results.rows.length !== 0) {
+            console.log(results.rows)
+            console.log('deleted matched schedules')
+          }
+        })
       } else {
         pool.query(`DELETE FROM driver_carpool_schedules WHERE day=$1 AND carpooler_id=$2`, [day, req.userId])
       }
@@ -513,45 +533,58 @@ router.get('/matched-schedules-driver', auth, (req, res) => {
     }
 
     // GETS ALL PASSENGERS CARPOOLING TO CAMPUS FOR A GIVEN DAY
-    pool.query(`SELECT dcs.driver_schedule_id AS id, dcs.day AS day, uds.to_campus AS to_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_to
-    FROM driver_carpool_schedules AS dcs, user_daily_schedules AS uds, users AS u
-    WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2 AND dcs.to_campus=$3
-    `, [req.userId, days[idx], true], (err, results) => {
+    pool.query(`SELECT to_campus, from_campus FROM user_daily_schedules WHERE user_id=$1 AND day=$2`, [req.userId, days[idx]], (err, resultsToFrom) => { 
       if (err) {
         return res.status(500).send({ error: err })
       }
 
-      console.log(results.rows)
-      if (results.rows.length > 0) {
-        driverDailySchedule.id = results.rows[0].id
-        driverDailySchedule.toCampus = results.rows[0].to_campus
-        results.rows.forEach(row => driverDailySchedule.passengersTo.push(row.carpooler_to))
-      }
-
-      // GET ALL PASSENGERS CARPOOLING FROM CAMPUS FOR A GIVEN DAY
-      pool.query(`SELECT dcs.driver_schedule_id AS id, dcs.day AS day, uds.from_campus AS from_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_from
+      pool.query(`SELECT dcs.driver_schedule_id AS id, dcs.day AS day, uds.to_campus AS to_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_to
       FROM driver_carpool_schedules AS dcs, user_daily_schedules AS uds, users AS u
       WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2 AND dcs.to_campus=$3
-      `, [req.userId, days[idx], false], (err, resultsOne) => {
+      `, [req.userId, days[idx], true], (err, results) => {
         if (err) {
           return res.status(500).send({ error: err })
         }
 
-        if (resultsOne.rows.length > 0) {
+        console.log(resultsToFrom.rows)
+        if (results.rows.length > 0) {
           driverDailySchedule.id = results.rows[0].id
-          driverDailySchedule.fromCampus = resultsOne.rows[0].from_campus
-          resultsOne.rows.forEach(row => {
-            driverDailySchedule.passengersFrom.push(row.carpooler_from)
-          })
+          results.rows.forEach(row => driverDailySchedule.passengersTo.push(row.carpooler_to))
         }
 
-        schedules.push(driverDailySchedule)
+        // GET ALL PASSENGERS CARPOOLING FROM CAMPUS FOR A GIVEN DAY
+        pool.query(`SELECT dcs.driver_schedule_id AS id, dcs.day AS day, uds.from_campus AS from_campus, dcs.carpooler_id, u.firstname || ' ' || u.lastname AS carpooler_from
+        FROM driver_carpool_schedules AS dcs, user_daily_schedules AS uds, users AS u
+        WHERE dcs.driver_id=$1 AND dcs.driver_schedule_id=uds.id AND dcs.carpooler_id=u.id AND dcs.day=$2 AND dcs.to_campus=$3
+        `, [req.userId, days[idx], false], (err, resultsOne) => {
+          if (err) {
+            return res.status(500).send({ error: err })
+          }
 
-        // RETURNING AFTER ITERATING THROUGH ALL DAYS
-        console.log({driverDailySchedule})
-        if (days[idx] === 'Friday') {
-          return res.status(200).send({ success: 'Successfully retrieved matched schedules for driver.', schedules })
-        }
+          if (resultsOne.rows.length > 0) {
+            driverDailySchedule.id = results.rows[0].id
+            resultsOne.rows.forEach(row => {
+              driverDailySchedule.passengersFrom.push(row.carpooler_from)
+            })
+          }
+
+          if (resultsToFrom.rows.length !== 0) {
+            driverDailySchedule.toCampus = resultsToFrom.rows[0].to_campus
+            driverDailySchedule.fromCampus = resultsToFrom.rows[0].from_campus
+          }
+
+          if (resultsToFrom.rows.length === 0 && (results.rows.length !== 0 || resultsOne.rows.length !== 0)) {
+            return res.status(400).send({ error: `Passengers were found for day: ${days[idx]}, but driver has no daily schedule set for that day.` })
+          }
+
+          schedules.push(driverDailySchedule)
+
+          // RETURNING AFTER ITERATING THROUGH ALL DAYS
+          console.log({driverDailySchedule})
+          if (days[idx] === 'Friday') {
+            return res.status(200).send({ success: 'Successfully retrieved matched schedules for driver.', schedules })
+          }
+        })
       })
     })
   }

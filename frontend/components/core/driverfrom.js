@@ -48,6 +48,7 @@ export default function DriverFrom ({ navigation, route }) {
         })
     }
     matchFromCampus()
+    setScheduleHasUpdate(false)
   }, [])
 
   const selectDriver = async (driverId, driverScheduleId) => {
@@ -64,6 +65,7 @@ export default function DriverFrom ({ navigation, route }) {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
+          setScheduleHasUpdate(true)
           navigation.navigate('Group Home')
         } else {
           console.log(data.error)

@@ -18,7 +18,8 @@ export default function Login ({ navigation }) {
     setEmail,
     setIsAuth,
     setIsLoading,
-    setGroupId
+    setGroupId,
+    setScheduleHasUpdate
   } = useContext(UserContext)
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function Login ({ navigation }) {
   const login = () => {
     const URL = BASE_API_URL + '/user/login'
     setIsLoading(true)
+    setScheduleHasUpdate(false)
     fetch(URL, {
       method: 'POST',
       headers: {
@@ -74,6 +76,7 @@ export default function Login ({ navigation }) {
           setMessage(data.success)
           setError(false)
           AsyncStorage.setItem('@session_token', data.token)
+          setScheduleHasUpdate(true)
           setIsAuth(true)
           if (data.groupId) {
             setGroupId(data.groupId)
@@ -89,6 +92,7 @@ export default function Login ({ navigation }) {
   const loginTestUser = () => {
     const URL = BASE_API_URL + '/user/login'
     setIsLoading(true)
+    setScheduleHasUpdate(false)
     fetch(URL, {
       method: 'POST',
       headers: {
@@ -110,6 +114,7 @@ export default function Login ({ navigation }) {
           setMessage(data.success)
           setError(false)
           AsyncStorage.setItem('@session_token', data.token)
+          setScheduleHasUpdate(true)
           setIsAuth(true)
           if (data.groupId) {
             console.log('setting group id')

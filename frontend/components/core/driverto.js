@@ -48,6 +48,7 @@ export default function DriverTo ({ navigation, route }) {
         })
     }
     matchToCampus()
+    setScheduleHasUpdate(false)
   }, [])
 
   const selectDriver = async (driverId, driverScheduleId) => {
@@ -64,6 +65,7 @@ export default function DriverTo ({ navigation, route }) {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
+          setScheduleHasUpdate(true)
           navigation.navigate('Driver From', { day: route.params?.day })
         } else {
           console.log(data.error)

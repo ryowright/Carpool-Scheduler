@@ -1,6 +1,7 @@
 import { BASE_API_URL } from '@env'
 import React, { useState, useEffect, useContext } from 'react'
 import PropTypes from 'prop-types'
+import moment from 'moment'
 import {
   View,
   Text,
@@ -21,7 +22,8 @@ export default function CreateSchedule ({ navigation, route }) {
   const [flexFrom, setFlexFrom] = useState(null)
 
   const {
-    isDriver
+    isDriver,
+    setScheduleHasUpdate
   } = useContext(UserContext)
 
   const onChangeTo = (event, selectedDate) => {
@@ -30,7 +32,7 @@ export default function CreateSchedule ({ navigation, route }) {
   }
 
   const onChangeFrom = (event, selectedDate) => {
-    const currentDate = selectedDate || toCampus
+    const currentDate = selectedDate || fromCampus
     setFromCampus(currentDate)
   }
 
@@ -49,9 +51,24 @@ export default function CreateSchedule ({ navigation, route }) {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
+          console.log(data)
           setScheduleExists(true)
-          setToCampus(data.schedule.to_campus)
-          setFromCampus(data.schedule.from_campus)
+
+          // CODE WORKS AROUND DATE TIME PICKER ERROR
+          const toCampus = new Date()
+          const toCampusMoment = moment(data.schedule.to_campus, 'HH:mm')
+          toCampus.setHours(toCampusMoment.get('hour'))
+          toCampus.setMinutes(toCampusMoment.get('minute'))
+          toCampus.setSeconds(0)
+
+          const fromCampus = new Date()
+          const fromCampusMoment = moment(data.schedule.from_campus, 'HH:mm')
+          fromCampus.setHours(fromCampusMoment.get('hour'))
+          fromCampus.setMinutes(fromCampusMoment.get('minute'))
+          fromCampus.setSeconds(0)
+
+          setToCampus(toCampus)
+          setFromCampus(fromCampus)
           setFlexTo(data.schedule.flexibility_early)
           setFlexFrom(data.schedule.flexibility_late)
         }
@@ -82,6 +99,7 @@ export default function CreateSchedule ({ navigation, route }) {
     })
       .then(response => response.json())
       .then(data => {
+        setScheduleHasUpdate(true)
         if (!isDriver) {
           navigation.navigate('Driver To', { day: route.params?.day })
         } else {
@@ -112,6 +130,7 @@ export default function CreateSchedule ({ navigation, route }) {
     })
     .then(response => response.json())
     .then(data => {
+      setScheduleHasUpdate(true)
       if (!isDriver) {
         navigation.navigate('Driver To', { day: route.params?.day })
       } else {

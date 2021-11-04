@@ -197,8 +197,9 @@ export default function App () {
   const [isLoading, setIsLoading] = useState(false)
   const [scheduleHasUpdate, setScheduleHasUpdate] = useState(false)
 
-  const [schedules, setSchedules] = useState([
+  const defaultSchedules = [
     {
+      idx: 1,
       id: 1,
       day: 'Monday',
       toCampus: null,
@@ -207,6 +208,7 @@ export default function App () {
       driverFrom: null
     },
     {
+      idx: 2,
       id: 2,
       day: 'Tuesday',
       toCampus: null,
@@ -215,6 +217,7 @@ export default function App () {
       driverFrom: null
     },
     {
+      idx: 3,
       id: 3,
       day: 'Wednesday',
       toCampus: null,
@@ -223,6 +226,7 @@ export default function App () {
       driverFrom: null
     },
     {
+      idx: 4,
       id: 4,
       day: 'Thursday',
       toCampus: null,
@@ -231,15 +235,17 @@ export default function App () {
       driverFrom: null
     },
     {
+      idx: 5,
       id: 5,
       day: 'Friday',
       toCampus: null,
       driverTo: null,
       fromCampus: null,
       driverFrom: null
-    }])
+    }
+  ]
 
-  const [driverSchedules, setDriverSchedules] = useState([
+  const defaultDriverSchedules = [
     {
       id: 1,
       day: 'Monday',
@@ -279,7 +285,11 @@ export default function App () {
       PassengersTo: null,
       fromCampus: null,
       PassengersFrom: null
-    }])
+    }
+  ]
+
+  const [schedules, setSchedules] = useState(defaultSchedules)
+  const [driverSchedules, setDriverSchedules] = useState(defaultDriverSchedules)
 
   const value = {
     firstName,
@@ -297,6 +307,8 @@ export default function App () {
     schedules,
     driverSchedules,
     scheduleHasUpdate,
+    defaultSchedules,
+    defaultDriverSchedules,
     setFirstName,
     setLastName,
     setEmail,
@@ -349,6 +361,7 @@ export default function App () {
           if (data.success) {
             console.log({ user: data.user })
             setIsAuth(true)
+            setScheduleHasUpdate(true)
             setIsDriver(data.user.driver)
             getMyGroup(token)
           } else {

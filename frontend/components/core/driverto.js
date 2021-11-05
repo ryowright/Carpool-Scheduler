@@ -74,7 +74,7 @@ export default function DriverTo ({ navigation, route }) {
       .catch(error => {
         console.log(error)
       })
-      setScheduleHasUpdate(true)
+    setScheduleHasUpdate(true)
   }
 
   const renderItem = ({ item }) => {
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     height: '100%'
   },
   itemContainer: {
-    
+
   },
   item: {
     height: 80,

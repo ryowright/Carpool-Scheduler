@@ -86,7 +86,7 @@ export default function Login ({ navigation }) {
       .catch((error) => {
         console.error('Error:', error)
       })
-      setIsLoading(false)
+    setIsLoading(false)
   }
 
   const loginTestUser = () => {
@@ -125,7 +125,7 @@ export default function Login ({ navigation }) {
       .catch((error) => {
         console.error('Error:', error)
       })
-      setIsLoading(false)
+    setIsLoading(false)
   }
 
   return (

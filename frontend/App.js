@@ -20,6 +20,7 @@ import CreateSchedule from './components/core/createschedule'
 import DriverTo from './components/core/driverto'
 import DriverFrom from './components/core/driverfrom'
 import Notifications from './components/core/Notifications'
+import GroupRequests from './components/core/grouprequests'
 import LoadingScreen from './components/custom/loadingscreen'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -37,145 +38,152 @@ const MyStack = (props) => {
         >
           {!props.value.isAuth
             ? (
-            <>
-              <Stack.Screen
-                name="Login"
-                component={Login}
-              />
-              <Stack.Screen
-                name="Registration"
-                component={Register}
-                options={{
-                  headerShown: true,
-                  title: 'Create an Account'
-                }}
-              />
-              <Stack.Screen
-                name="Registration Two"
-                component={RegisterTwo}
-                options={{
-                  headerShown: true,
-                  title: 'Create an Account'
-                }}
-              />
-              <Stack.Screen
-                name="Registration Three"
-                component={RegisterThree}
-                options={{
-                  headerShown: true,
-                  title: 'Create an Account'
-                }}
-              />
-              <Stack.Screen
-                name="Verify Email"
-                component={VerifyEmail}
-              />
-              <Stack.Screen
-                name="Forgot Password"
-                component={ForgotPassword}
-                options={{
-                  headerShown: true,
-                  title: 'Reset Your Password'
-                }}
-              />
-              <Stack.Screen
-                name="Forgot Password Code"
-                component={ForgotPasswordCode}
-              />
-              <Stack.Screen
-                name="Reset Password"
-                component={ResetPassword}
-              />
-            </>
-              )
+              <>
+                <Stack.Screen
+                  name="Login"
+                  component={Login}
+                />
+                <Stack.Screen
+                  name="Registration"
+                  component={Register}
+                  options={{
+                    headerShown: true,
+                    title: 'Create an Account'
+                  }}
+                />
+                <Stack.Screen
+                  name="Registration Two"
+                  component={RegisterTwo}
+                  options={{
+                    headerShown: true,
+                    title: 'Create an Account'
+                  }}
+                />
+                <Stack.Screen
+                  name="Registration Three"
+                  component={RegisterThree}
+                  options={{
+                    headerShown: true,
+                    title: 'Create an Account'
+                  }}
+                />
+                <Stack.Screen
+                  name="Verify Email"
+                  component={VerifyEmail}
+                />
+                <Stack.Screen
+                  name="Forgot Password"
+                  component={ForgotPassword}
+                  options={{
+                    headerShown: true,
+                    title: 'Reset Your Password'
+                  }}
+                />
+                <Stack.Screen
+                  name="Forgot Password Code"
+                  component={ForgotPasswordCode}
+                />
+                <Stack.Screen
+                  name="Reset Password"
+                  component={ResetPassword}
+                />
+              </>
+            )
             : (
-                !props.value.groupId
-                  ? (
-              <>
-                <Stack.Screen
-                  name="Home"
-                  component={Home}
-                />
-                <Stack.Screen
-                name="Search Group"
-                component={SearchGroup}
-                options={{
-                  headerShown: true,
-                  title: 'Search for a Group'
-                }}
-              />
-              <Stack.Screen
-                name="Create Group"
-                component={CreateGroup}
-                options={{
-                  headerShown: true,
-                  title: 'Create a Group'
-                }}
-              />
-              <Stack.Screen
-                name="Create Group Two"
-                component={CreateGroupTwo}
-                options={{
-                  headerShown: true,
-                  title: 'Create a Group'
-                }}
-              />
-              <Stack.Screen
-                name="Group Detail"
-                component={GroupDetail}
-              />
-              <Stack.Screen
-                name="Settings"
-                component={Settings}
-                options={{
-                  headerShown: true
-                }}
-              />
-              </>
-                    )
-                  : (
-              <>
-                <Stack.Screen
-                  name="Group Home"
-                  component={GroupHome}
-                />
-                <Stack.Screen
-                  name="Settings"
-                  component={Settings}
-                  options={{
-                    headerShown: true
-                  }}
-                />
-                <Stack.Screen
-                  name="Notifications"
-                  component={Notifications}
-                  options={{
-                    headerShown: true
-                  }}
-                />
-                <Stack.Screen
-                  name="Create Schedule"
-                  component={CreateSchedule}
-                />
-                <Stack.Screen
-                  name="Driver To"
-                  component={DriverTo}
-                  options={{
-                    headerShown: true,
-                    title: 'Select Driver to Campus'
-                  }}
-                />
-                <Stack.Screen
-                  name="Driver From"
-                  component={DriverFrom}
-                  options={{
-                    headerShown: true,
-                    title: 'Select Driver From Campus'
-                  }}
-                />
-              </>
-                    )
-              )}
+              !props.value.groupId
+                ? (
+                  <>
+                    <Stack.Screen
+                      name="Home"
+                      component={Home}
+                    />
+                    <Stack.Screen
+                      name="Search Group"
+                      component={SearchGroup}
+                      options={{
+                        headerShown: true,
+                        title: 'Search for a Group'
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Create Group"
+                      component={CreateGroup}
+                      options={{
+                        headerShown: true,
+                        title: 'Create a Group'
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Create Group Two"
+                      component={CreateGroupTwo}
+                      options={{
+                        headerShown: true,
+                        title: 'Create a Group'
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Group Detail"
+                      component={GroupDetail}
+                    />
+                    <Stack.Screen
+                      name="Settings"
+                      component={Settings}
+                      options={{
+                        headerShown: true
+                      }}
+                    />
+                  </>
+                )
+                : (
+                  <>
+                    <Stack.Screen
+                      name="Group Home"
+                      component={GroupHome}
+                    />
+                    <Stack.Screen
+                      name="Settings"
+                      component={Settings}
+                      options={{
+                        headerShown: true
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Notifications"
+                      component={Notifications}
+                      options={{
+                        headerShown: true
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Group Requests"
+                      component={GroupRequests}
+                      options={{
+                        headerShown: true
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Create Schedule"
+                      component={CreateSchedule}
+                    />
+                    <Stack.Screen
+                      name="Driver To"
+                      component={DriverTo}
+                      options={{
+                        headerShown: true,
+                        title: 'Select Driver to Campus'
+                      }}
+                    />
+                    <Stack.Screen
+                      name="Driver From"
+                      component={DriverFrom}
+                      options={{
+                        headerShown: true,
+                        title: 'Select Driver From Campus'
+                      }}
+                    />
+                  </>
+                )
+            )}
         </Stack.Navigator>
       </UserContext.Provider>
     </NavigationContainer>
@@ -196,6 +204,7 @@ export default function App () {
   const [isDriver, setIsDriver] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [scheduleHasUpdate, setScheduleHasUpdate] = useState(false)
+  const [groupRequests, setGroupRequests] = useState(null)
 
   const defaultSchedules = [
     {
@@ -309,6 +318,7 @@ export default function App () {
     scheduleHasUpdate,
     defaultSchedules,
     defaultDriverSchedules,
+    groupRequests,
     setFirstName,
     setLastName,
     setEmail,
@@ -323,10 +333,34 @@ export default function App () {
     setIsLoading,
     setSchedules,
     setDriverSchedules,
-    setScheduleHasUpdate
+    setScheduleHasUpdate,
+    setGroupRequests
   }
 
   useEffect(() => {
+    const getGroupRequests = async (groupId) => {
+      const URL = BASE_API_URL + `/group/requests?group_id=${groupId}`
+      const token = await AsyncStorage.getItem('@session_token')
+      fetch(URL, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            setGroupRequests(data.requests)
+          } else {
+            setGroupRequests(null)
+          }
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    }
+
     const getMyGroup = (token) => {
       const URL = BASE_API_URL + '/group/me'
       fetch(URL, {
@@ -340,10 +374,16 @@ export default function App () {
         .then(data => {
           if (data.success) {
             setGroupId(data.group.id)
+            getGroupRequests(data.group.id)
+          } else {
+            setGroupId('')
+            setGroupRequests(null)
           }
         })
         .catch(error => {
           console.log(error)
+          setGroupId('')
+          setGroupRequests(null)
         })
     }
 
@@ -386,9 +426,9 @@ export default function App () {
   }, [isAuth, groupId])
 
   return (
-    isLoading ?
-    <LoadingScreen /> :
-    <MyStack value={value} />
+    isLoading
+      ? <LoadingScreen />
+      : <MyStack value={value} />
   )
 }
 

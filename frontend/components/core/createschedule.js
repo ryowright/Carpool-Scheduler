@@ -48,34 +48,34 @@ export default function CreateSchedule ({ navigation, route }) {
           Authorization: `Bearer ${token}`
         }
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          console.log(data)
-          setScheduleExists(true)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            console.log(data)
+            setScheduleExists(true)
 
-          // CODE WORKS AROUND DATE TIME PICKER ERROR
-          const toCampus = new Date()
-          const toCampusMoment = moment(data.schedule.to_campus, 'HH:mm')
-          toCampus.setHours(toCampusMoment.get('hour'))
-          toCampus.setMinutes(toCampusMoment.get('minute'))
-          toCampus.setSeconds(0)
+            // CODE WORKS AROUND DATE TIME PICKER ERROR
+            const toCampus = new Date()
+            const toCampusMoment = moment(data.schedule.to_campus, 'HH:mm')
+            toCampus.setHours(toCampusMoment.get('hour'))
+            toCampus.setMinutes(toCampusMoment.get('minute'))
+            toCampus.setSeconds(0)
 
-          const fromCampus = new Date()
-          const fromCampusMoment = moment(data.schedule.from_campus, 'HH:mm')
-          fromCampus.setHours(fromCampusMoment.get('hour'))
-          fromCampus.setMinutes(fromCampusMoment.get('minute'))
-          fromCampus.setSeconds(0)
+            const fromCampus = new Date()
+            const fromCampusMoment = moment(data.schedule.from_campus, 'HH:mm')
+            fromCampus.setHours(fromCampusMoment.get('hour'))
+            fromCampus.setMinutes(fromCampusMoment.get('minute'))
+            fromCampus.setSeconds(0)
 
-          setToCampus(toCampus)
-          setFromCampus(fromCampus)
-          setFlexTo(data.schedule.flexibility_early)
-          setFlexFrom(data.schedule.flexibility_late)
-        }
-      })
-      .catch(error => {
-        console.log(error)
-      })
+            setToCampus(toCampus)
+            setFromCampus(fromCampus)
+            setFlexTo(data.schedule.flexibility_early)
+            setFlexFrom(data.schedule.flexibility_late)
+          }
+        })
+        .catch(error => {
+          console.log(error)
+        })
     }
     getSchedule()
   }, [])
@@ -128,18 +128,18 @@ export default function CreateSchedule ({ navigation, route }) {
         flexibilityLate: Number(flexFrom)
       })
     })
-    .then(response => response.json())
-    .then(data => {
-      setScheduleHasUpdate(true)
-      if (!isDriver) {
-        navigation.navigate('Driver To', { day: route.params?.day })
-      } else {
-        navigation.navigate('Group Home')
-      }
-    })
-    .catch(error => {
-      console.log(error)
-    })
+      .then(response => response.json())
+      .then(data => {
+        setScheduleHasUpdate(true)
+        if (!isDriver) {
+          navigation.navigate('Driver To', { day: route.params?.day })
+        } else {
+          navigation.navigate('Group Home')
+        }
+      })
+      .catch(error => {
+        console.log(error)
+      })
   }
 
   return (
@@ -199,7 +199,7 @@ export default function CreateSchedule ({ navigation, route }) {
 
         <View style={styles.btnContainer}>
           <TouchableOpacity
-            onPress={() => {scheduleExists ? updateSchedule() : createSchedule()}}
+            onPress={() => { scheduleExists ? updateSchedule() : createSchedule() }}
             style={styles.createBtn}
           >
             <Text style={styles.createBtnText}>

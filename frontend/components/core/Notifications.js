@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useContext } from 'react'
 import PropTypes from 'prop-types'
 import {
   View,
@@ -7,9 +7,12 @@ import {
   StyleSheet
 } from 'react-native'
 import { Divider } from 'react-native-paper'
+import { UserContext } from '../../usercontext'
 
 export default function Notifications ({ navigation }) {
-  const [counter, setCounter] = useState(0)
+  const {
+    groupRequests
+  } = useContext(UserContext)
 
   return (
     <View style={styles.container}>
@@ -17,7 +20,10 @@ export default function Notifications ({ navigation }) {
         <View style={styles.settingsSubContainer}>
           <Divider />
           <Pressable
-            onPress={() => setCounter(counter + 1)}
+            onPress={() => {
+              console.log(`Number of pending requests: ${groupRequests ? groupRequests.length : 0}`)
+              navigation.navigate('Group Requests')
+            }}
             style={({ pressed }) => [
               {
                 backgroundColor: pressed
@@ -28,10 +34,10 @@ export default function Notifications ({ navigation }) {
             ]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ width: '50%' }}>
-                <Text style={styles.settingsText}>Join Requests</Text>
+                <Text style={styles.settingsText}>Pending Join Requests</Text>
               </View>
               <View style={{ width: '50%', alignItems: 'flex-end', paddingRight: 50 }}>
-                <Text style={{ color: 'blue' }}>{counter}</Text>
+                <Text style={{ color: 'blue' }}>{groupRequests ? groupRequests.length : 0}</Text>
               </View>
             </View>
           </Pressable>
@@ -71,7 +77,6 @@ const styles = StyleSheet.create({
   signoutBtn: {
     width: '100%',
     height: 50,
-    // alignItems: "flex-start",
     justifyContent: 'center',
     paddingLeft: 25
   },

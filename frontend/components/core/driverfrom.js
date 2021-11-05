@@ -19,7 +19,7 @@ export default function DriverFrom ({ navigation, route }) {
   const {
     setScheduleHasUpdate
   } = useContext(UserContext)
-  
+
   useEffect(() => {
     const matchFromCampus = async () => {
       const URL = BASE_API_URL + `/schedule/match-from-campus?day=${route.params?.day}`
@@ -74,7 +74,7 @@ export default function DriverFrom ({ navigation, route }) {
       .catch(error => {
         console.log(error)
       })
-      setScheduleHasUpdate(true)
+    setScheduleHasUpdate(true)
   }
 
   const renderItem = ({ item }) => {
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     height: '100%'
   },
   itemContainer: {
-    
+
   },
   item: {
     height: 80,

@@ -150,6 +150,7 @@ router.get('/search', auth, (req, res) => {
 
     // Filter out groups that are private
     const groups = results.rows.filter(group => group.privacy !== 'private')
+    console.log({groups})
 
     return res.status(200).send({
       // success: 'Successfully queried groups.',
@@ -222,7 +223,8 @@ router.get('/requests', auth, (req, res) => {
       return res.status(400).send({ error: 'The user attempting to get requests for this group is not in the group.' })
     }
 
-    pool.query('SELECT * FROM group_requests WHERE group_id=$1', [groupId], (err, results) => {
+    pool.query(`SELECT gr.id AS id, gr.user_id AS userId, gr.group_id AS groupId, u.firstname || ' ' || u.lastname AS name 
+      FROM group_requests AS gr, users AS u WHERE gr.group_id=$1 AND u.id=gr.user_id`, [groupId], (err, results) => {
       if (err) {
         return res.status(500).send({ error: err })
       }
@@ -230,7 +232,7 @@ router.get('/requests', auth, (req, res) => {
       const requests = results.rows
 
       if (requests.length === 0) {
-        return res.status(400).send({ error: 'Request does not exist.' })
+        return res.status(400).send({ error: 'Group does not have any pending join requests.' })
       }
 
       return res.status(200).send({

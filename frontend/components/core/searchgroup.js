@@ -61,7 +61,7 @@ export default function SearchGroup ({ navigation }) {
     })
       .then((response) => response.json())
       .then(data => {
-        if (data.success) {
+        if (data.groups) {
           setDATA(data.groups.length !== 0 ? data.groups : null)
         }
       })

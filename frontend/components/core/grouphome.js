@@ -66,7 +66,7 @@ export default function GroupHome ({ navigation }) {
                   const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
                   const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
 
-                  dataSchedules[idx] = {...dataSchedules[idx], toCampus, fromCampus}
+                  dataSchedules[idx] = { ...dataSchedules[idx], toCampus, fromCampus }
                 }
               })
               setSchedules(dataSchedules)
@@ -89,52 +89,52 @@ export default function GroupHome ({ navigation }) {
           Authorization: `Bearer ${token}`
         }
       }).then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          console.log(data.error)
-        } else {
-          if (data.schedules) {
-            const dataSchedules = []
-            data.schedules.forEach(schedule => {
-              const dataSchedule = {
-                ...schedule
-              }
-              console.log(schedule.fromCampus)
-              if (schedule.toCampus && schedule.fromCampus) {
-                const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
-                const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
-                console.log('test')
-                let passengersTo = ''
-                let passengersFrom = ''
-
-                for (let idx in schedule.passengersTo) {
-                  if (idx != schedule.passengersTo.length - 1) {
-                    passengersTo += schedule.passengersTo[idx] + ', '
-                  } else {
-                    passengersTo += schedule.passengersTo[idx]
-                  }
+        .then(data => {
+          if (data.error) {
+            console.log(data.error)
+          } else {
+            if (data.schedules) {
+              const dataSchedules = []
+              data.schedules.forEach(schedule => {
+                const dataSchedule = {
+                  ...schedule
                 }
+                console.log(schedule.fromCampus)
+                if (schedule.toCampus && schedule.fromCampus) {
+                  const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
+                  const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
+                  console.log('test')
+                  let passengersTo = ''
+                  let passengersFrom = ''
 
-                for (let idx in schedule.passengersFrom) {
-                  if (idx != schedule.passengersFrom.length - 1) {
-                    passengersFrom += schedule.passengersFrom[idx] + ', '
-                  } else {
-                    passengersFrom += schedule.passengersFrom[idx]
+                  for (const idx in schedule.passengersTo) {
+                    if (idx !== schedule.passengersTo.length - 1) {
+                      passengersTo += schedule.passengersTo[idx] + ', '
+                    } else {
+                      passengersTo += schedule.passengersTo[idx]
+                    }
                   }
-                }
 
-                dataSchedule.toCampus = toCampus
-                dataSchedule.fromCampus = fromCampus
-                dataSchedule.passengersTo = passengersTo
-                dataSchedule.passengersFrom = passengersFrom
-              }
-              dataSchedules.push(dataSchedule)
-            })
-            setDriverSchedules(dataSchedules)
-            setScheduleHasUpdate(false)
+                  for (const idx in schedule.passengersFrom) {
+                    if (idx !== schedule.passengersFrom.length - 1) {
+                      passengersFrom += schedule.passengersFrom[idx] + ', '
+                    } else {
+                      passengersFrom += schedule.passengersFrom[idx]
+                    }
+                  }
+
+                  dataSchedule.toCampus = toCampus
+                  dataSchedule.fromCampus = fromCampus
+                  dataSchedule.passengersTo = passengersTo
+                  dataSchedule.passengersFrom = passengersFrom
+                }
+                dataSchedules.push(dataSchedule)
+              })
+              setDriverSchedules(dataSchedules)
+              setScheduleHasUpdate(false)
+            }
           }
-        }
-      })
+        })
     }
 
     const getMyGroup = (token) => {
@@ -163,11 +163,11 @@ export default function GroupHome ({ navigation }) {
 
   const sortDays = (a, b) => {
     const daysidx = {
-      'Monday': 1,
-      'Tuesday': 2,
-      'Wednesday': 3,
-      'Thursday': 4,
-      'Friday': 5
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5
     }
 
     return daysidx[a.day] - daysidx[b.day]

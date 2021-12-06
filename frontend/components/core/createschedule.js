@@ -114,6 +114,7 @@ export default function CreateSchedule ({ navigation, route }) {
   const updateSchedule = async () => {
     const URL = BASE_API_URL + '/schedule/update-one'
     const token = await AsyncStorage.getItem('@session_token')
+    console.log({URL})
     fetch(URL, {
       method: 'PATCH',
       headers: {

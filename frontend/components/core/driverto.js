@@ -22,6 +22,7 @@ export default function DriverTo ({ navigation, route }) {
 
   useEffect(() => {
     const matchToCampus = async () => {
+      console.log('matching to campus')
       const URL = BASE_API_URL + `/schedule/match-to-campus?day=${route.params?.day}`
       const token = await AsyncStorage.getItem('@session_token')
       fetch(URL, {
@@ -39,6 +40,7 @@ export default function DriverTo ({ navigation, route }) {
               driver.to_campus = toCampus
             })
             setDrivers(data.drivers)
+            console.log({ drivers: data.drivers })
           } else {
             console.log(data.error)
           }

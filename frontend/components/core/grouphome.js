@@ -36,6 +36,7 @@ export default function GroupHome ({ navigation }) {
         return setIsAuth(false)
       }
       getMyGroup(tok)
+      console.log({isDriver})
 
       if (!isDriver && scheduleHasUpdate) {
         fetchMatchedSchedules(tok)
@@ -82,6 +83,7 @@ export default function GroupHome ({ navigation }) {
     const fetchMatchedDriverSchedules = (token) => {
       const URL = BASE_API_URL + '/schedule/matched-schedules-driver'
       setSchedules(defaultDriverSchedules)
+      console.log('fetching matched driver schedules')
       fetch(URL, {
         method: 'GET',
         headers: {
@@ -99,11 +101,9 @@ export default function GroupHome ({ navigation }) {
                 const dataSchedule = {
                   ...schedule
                 }
-                console.log(schedule.fromCampus)
                 if (schedule.toCampus && schedule.fromCampus) {
                   const toCampus = moment(schedule.toCampus, 'HH:mm').format('hh:mm A')
                   const fromCampus = moment(schedule.fromCampus, 'HH:mm').format('hh:mm A')
-                  console.log('test')
                   let passengersTo = ''
                   let passengersFrom = ''
 
@@ -152,6 +152,7 @@ export default function GroupHome ({ navigation }) {
             console.log(data.error)
           } else {
             setGroup(data.group)
+            console.log(data.group)
           }
         })
         .catch(error => {

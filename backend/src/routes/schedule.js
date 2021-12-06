@@ -239,7 +239,7 @@ router.get('/match-to-campus', auth, (req, res) => {
           filteredDriversScheduleIds.push(driver.id)
         })
 
-        pool.query(`SELECT COUNT(*), driver_schedule_id, driver_id, carspace FROM driver_carpool_schedules 
+        pool.query(`SELECT COUNT(*) AS count, driver_schedule_id, driver_id, carspace FROM driver_carpool_schedules 
           INNER JOIN users ON users.id=driver_id WHERE to_campus=$1 GROUP BY driver_schedule_id, driver_id, carspace`,
         [true], (err, resultsThree) => {
           if (err) {
@@ -263,9 +263,10 @@ router.get('/match-to-campus', auth, (req, res) => {
           })
 
           // FINAL COMPATIBLE LIST OF DRIVER SCHEDULE IDS
-          const finalScheduleIds = filteredDriversSchedules.filter(row => !carspaceIdsToFilter.includes(row.driver_schedule_id))
+          const finalScheduleIds = filteredDriversScheduleIds.filter(row => !carspaceIdsToFilter.includes(row.driver_schedule_id))
 
           const finalSchedules = []
+          console.log({finalScheduleIds})
           filteredDriversSchedules.forEach(schedule => {
             if (finalScheduleIds.includes(schedule.id)) {
               console.log({finalSchedules})
@@ -339,7 +340,7 @@ router.get('/match-from-campus', auth, (req, res) => {
           filteredDriversScheduleIds.push(driver.id)
         })
 
-        pool.query(`SELECT COUNT(*), driver_schedule_id, driver_id, carspace FROM driver_carpool_schedules 
+        pool.query(`SELECT COUNT(*) AS count, driver_schedule_id, driver_id, carspace FROM driver_carpool_schedules 
           INNER JOIN users ON users.id=driver_id WHERE to_campus=$1 GROUP BY driver_schedule_id, driver_id, carspace`,
         [false], (err, resultsThree) => {
           if (err) {
@@ -363,7 +364,7 @@ router.get('/match-from-campus', auth, (req, res) => {
           })
 
           // FINAL COMPATIBLE LIST OF DRIVER SCHEDULE IDS
-          const finalScheduleIds = filteredDriversSchedules.filter(row => !carspaceIdsToFilter.includes(row.driver_schedule_id))
+          const finalScheduleIds = filteredDriversScheduleIds.filter(row => !carspaceIdsToFilter.includes(row.driver_schedule_id))
 
           const finalSchedules = []
           filteredDriversSchedules.forEach(schedule => {
@@ -458,7 +459,7 @@ router.get('/matched-schedules', auth, (req, res) => {
   pool.query(`SELECT dcs.id AS id, uds.day AS day, uds.to_campus AS to_campus, uds1.from_campus AS from_campus, u.firstname || ' ' || u.lastname AS driver_to, u1.firstname || ' ' || u1.lastname AS driver_from
     FROM driver_carpool_schedules AS dcs, driver_carpool_schedules AS dcs1, user_daily_schedules AS uds, user_daily_schedules AS uds1, users AS u, users AS u1
     WHERE dcs.carpooler_id=$1 AND dcs.to_campus=$2 AND dcs.driver_schedule_id=uds.id AND uds.user_id=u.id AND dcs1.carpooler_id=$3 AND dcs1.to_campus=$4 AND
-    dcs1.driver_schedule_id=uds1.id AND uds1.user_id=u1.id LIMIT 5`, 
+    dcs1.driver_schedule_id=uds1.id AND uds1.user_id=u1.id AND dcs1.day=uds.day LIMIT 5`, 
     [req.userId, true, req.userId, false], (err, results) => {
     if (err) {
       console.log('error')

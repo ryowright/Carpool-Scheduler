@@ -17,6 +17,7 @@ export default function Login ({ navigation }) {
   const {
     setEmail,
     setIsAuth,
+    setIsDriver,
     setIsLoading,
     setGroupId,
     setScheduleHasUpdate
@@ -77,6 +78,7 @@ export default function Login ({ navigation }) {
           setError(false)
           AsyncStorage.setItem('@session_token', data.token)
           setScheduleHasUpdate(true)
+          setIsDriver(data.driver)
           setIsAuth(true)
           if (data.groupId) {
             setGroupId(data.groupId)
@@ -93,6 +95,7 @@ export default function Login ({ navigation }) {
     const URL = BASE_API_URL + '/user/login'
     setIsLoading(true)
     setScheduleHasUpdate(false)
+    console.log({URL})
     fetch(URL, {
       method: 'POST',
       headers: {

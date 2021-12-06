@@ -14,7 +14,9 @@ import { UserContext } from '../../usercontext'
 
 export default function Settings ({ navigation }) {
   const {
-    setIsAuth
+    setIsAuth,
+    groupId,
+    setGroupId
   } = useContext(UserContext)
 
   const logout = async () => {
@@ -50,6 +52,61 @@ export default function Settings ({ navigation }) {
     setIsAuth(false)
   }
 
+  const leaveGroup = async () => {
+    const token = await AsyncStorage.getItem('@session_token')
+    if (!token) {
+      console.log('no session token')
+      return setIsAuth(false)
+    }
+
+    const URL = BASE_API_URL + '/group/leave'
+    fetch(URL, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ groupId })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.log(data.error)
+        } else if (data.success) {
+          setGroupId('')
+          navigation.navigate('Home')
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
+  }
+
+  leaveGroupButton = () => {
+    return (
+      <Pressable
+        onPress={() => leaveGroup()}
+        style={({ pressed }) => [
+          {
+            backgroundColor: pressed
+              ? '#c9c9c9'
+              : 'white'
+          },
+          styles.signoutBtn
+        ]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Icon
+            style={{ paddingRight: 15 }}
+            name="sign-out"
+            size={30}
+            color="#949494"
+          />
+          <Text style={styles.settingsText}>Leave Group</Text>
+        </View>
+      </Pressable>
+    )
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.settingsContainer}>
@@ -75,6 +132,7 @@ export default function Settings ({ navigation }) {
               <Text style={styles.settingsText}>Sign Out of Carpool Scheduler</Text>
             </View>
           </Pressable>
+          {groupId === '' || groupId === null ? null : leaveGroupButton()}
           <Divider />
         </View>
       </View>
